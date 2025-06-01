@@ -3,13 +3,11 @@ import { View, ScrollView, StyleSheet } from 'react-native';
 import CalendarSelector from '../components/CalendarSelector';
 import MatchCard from '../components/MatchCard';
 import Filters from '../components/Filters';
-// import CalendarSelector from '../components/CalendarSelector';
-// import Filters from '../components/Filters';
-// import MatchCard, { MatchData } from '../components/MatchCard';
+import { MatchData } from '../dtos/Matches';
 
 const mockMatches: MatchData[] = [
   {
-    id: '1',
+    id: 1,
     homeTeam: 'Manchester Utd',
     awayTeam: 'Arsenal',
     status: 'LIVE',

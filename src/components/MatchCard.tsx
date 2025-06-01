@@ -1,19 +1,7 @@
 import React, { JSX } from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-export interface MatchData {
-  id: string;
-  homeTeam: string;
-  awayTeam: string;
-  status: 'LIVE' | 'END' | string;
-  score: string;
-  league: string;
-  broadcaster: string;
-  viewers: number;
-  homeAvatar: string;
-  awayAvatar: string;
-}
+import { MatchData } from '../dtos/Matches';
 
 interface Props {
   match: MatchData;
