@@ -1,4 +1,5 @@
-import { useNavigation } from '@react-navigation/native';
+// import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
 import {
   SafeAreaView,
@@ -11,12 +12,13 @@ import {
   StatusBar,
 } from 'react-native';
 import { RootStackParamList } from '../../navigation/RootStackParamList';
+// import { RootStackParamList } from '../../navigation/RootStackParamList';
 
-type Props = StackNavigationProp<RootStackParamList, 'Launch'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'Launch'>;
 
 const { width } = Dimensions.get('window');
 
-const LaunchScreen = ({navigation}: LaunchScreenProps) => {
+const LaunchScreen = ({navigation}: Props) => {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />

@@ -4,29 +4,27 @@ import LaunchScreen from './screens/launch/Launch';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import RegisterScreen from './screens/Register';
+import { RootStackParamList } from './navigation/RootStackParamList';
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <NavigationContainer>
-        <Stack.Navigator>
-          <Stack.Screen
-            name = "Launch"
-            component={LaunchScreen}
-            options={{title: 'Welcome'}}
-          />
-          <Stack.Screen 
-            name = "Register"
-            component={RegisterScreen}
-            options={{title: 'Register'}}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
-      <StatusBar style="auto" />
-    </View>
-  );
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="Launch">
+        <Stack.Screen
+          name="Launch"
+          component={LaunchScreen}
+          options={{ title: 'Welcome' }}
+        />
+        <Stack.Screen 
+          name = "Register"
+          component={RegisterScreen}
+          options={{title: 'Register'}}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
+  )
 }
 
 const styles = StyleSheet.create({
