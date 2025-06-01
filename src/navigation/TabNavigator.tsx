@@ -1,9 +1,9 @@
 import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-// import HomeScreen from '../screens/HomeScreen';
-// import MatchesScreen from '../screens/MatchesScreen';
-// import SettingsScreen from '../screens/SettingsScreen';
 import { Ionicons } from '@expo/vector-icons';
+import HomeScreen from '../screens/Home';
+import MatchesScreen from '../screens/Match';
+import SettingsScreen from '../screens/Settings';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 export type RootTabParamList = {
   Home: undefined;
@@ -13,11 +13,12 @@ export type RootTabParamList = {
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
-export default function TabNavigator(): JSX.Element {
+const TabNavigator = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ color, size }) => {
+        // tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ size, color}) => {
           let iconName: keyof typeof Ionicons.glyphMap =
             route.name === 'Home'
               ? 'home'
@@ -36,3 +37,5 @@ export default function TabNavigator(): JSX.Element {
     </Tab.Navigator>
   );
 }
+
+export default TabNavigator;

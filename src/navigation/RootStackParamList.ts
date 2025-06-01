@@ -1,7 +1,11 @@
 export type RootStackParamList = {
-  // Home: undefined;
-  // Details: { itemId: number }; // Example: route with params
-  // Profile: { userId: string };
   Launch: undefined; // Initial screen
   Register: undefined; // Registration screen
+  Main: undefined;
 };
+
+export type BottomNavigatorStackParamList = {
+  Home: undefined;
+  Matches: undefined;
+  Settings: undefined;
+}

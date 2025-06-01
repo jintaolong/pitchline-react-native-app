@@ -1,28 +1,41 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
-import LaunchScreen from './screens/launch/Launch';
+import LaunchScreen from './screens/Launch';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import RegisterScreen from './screens/Register';
-import { RootStackParamList } from './navigation/RootStackParamList';
+import { BottomNavigatorStackParamList, RootStackParamList } from './navigation/RootStackParamList';
+import TabNavigator from './navigation/TabNavigator';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const BottomNavigator = createNativeStackNavigator<BottomNavigatorStackParamList>();
 
 export default function App() {
+  const isLoggedIn = true; // Replace with actual authentication logic
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Launch">
-        <Stack.Screen
-          name="Launch"
-          component={LaunchScreen}
-          options={{ title: 'Welcome' }}
-        />
-        <Stack.Screen 
-          name = "Register"
-          component={RegisterScreen}
-          options={{title: 'Register'}}
-        />
-      </Stack.Navigator>
+      <StatusBar style="auto" />
+        <Stack.Navigator>
+          {isLoggedIn ? (
+            <Stack.Screen 
+              name="Main"
+              component={TabNavigator}
+            />
+          ) : (
+            <Stack.Group>
+              <Stack.Screen
+                name="Launch"
+                component={LaunchScreen}
+                options={{ title: 'Welcome' }}
+              />
+              <Stack.Screen
+                name="Register"
+                component={RegisterScreen}
+                options={{ title: 'Register' }}
+              />
+            </Stack.Group>
+          )}
+        </Stack.Navigator>
     </NavigationContainer>
   )
 }
