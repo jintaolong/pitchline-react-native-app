@@ -11,10 +11,13 @@ import {
   StatusBar,
   ScrollView,
 } from 'react-native';
+import { RootStackParamList } from '../navigation/RootStackParamList';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 const { width } = Dimensions.get('window');
+type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
-const RegisterScreen = () => {
+const RegisterScreen = ({ navigation }: Props) => {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -129,7 +132,10 @@ const RegisterScreen = () => {
 
               <TouchableOpacity style={styles.socialButton}>
                 <Text style={styles.socialButtonIcon}>👤</Text>
-                <Text style={styles.socialButtonText}>Continue as Guest</Text>
+                <Text 
+                  style={styles.socialButtonText}
+                  onPress={() => navigation.navigate('Main')}                
+                >Continue as Guest</Text>
               </TouchableOpacity>
 
               {/* Login Link */}

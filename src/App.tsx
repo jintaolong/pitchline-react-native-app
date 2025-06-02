@@ -11,7 +11,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const BottomNavigator = createNativeStackNavigator<BottomNavigatorStackParamList>();
 
 export default function App() {
-  const isLoggedIn = true; // Replace with actual authentication logic
+  const isLoggedIn = false; // Replace with actual authentication logic
   return (
     <NavigationContainer>
       <StatusBar style="auto" />
@@ -20,6 +20,7 @@ export default function App() {
             <Stack.Screen 
               name="Main"
               component={TabNavigator}
+              options={{ headerShown: false }}
             />
           ) : (
             <Stack.Group>

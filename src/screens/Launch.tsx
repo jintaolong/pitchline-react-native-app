@@ -11,8 +11,7 @@ import {
   Dimensions,
   StatusBar,
 } from 'react-native';
-import { RootStackParamList } from '../../navigation/RootStackParamList';
-// import { RootStackParamList } from '../../navigation/RootStackParamList';
+import { RootStackParamList } from '../navigation/RootStackParamList';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Launch'>;
 

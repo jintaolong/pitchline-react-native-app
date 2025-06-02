@@ -1,6 +1,7 @@
 export type RootStackParamList = {
   Launch: undefined; // Initial screen
   Register: undefined; // Registration screen
+  Login: undefined; // Login screen
   Main: undefined;
 };
 

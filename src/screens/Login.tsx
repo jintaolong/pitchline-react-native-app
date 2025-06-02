@@ -1,3 +1,4 @@
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -11,10 +12,13 @@ import {
   StatusBar,
   ScrollView,
 } from 'react-native';
+import { RootStackParamList } from '../navigation/RootStackParamList';
 
 const { width } = Dimensions.get('window');
 
-const LoginScreen = () => {
+type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
+
+const LoginScreen = ({navigation}: Props) => {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -105,7 +109,10 @@ const LoginScreen = () => {
 
               <TouchableOpacity style={styles.socialButton}>
                 <Text style={styles.socialButtonIcon}>👤</Text>
-                <Text style={styles.socialButtonText}>Continue as Guest</Text>
+                <Text 
+                  style={styles.socialButtonText}
+                  onPress={() => navigation.navigate('Main')}
+                  >Continue as Guest</Text>
               </TouchableOpacity>
             </View>
           </View>

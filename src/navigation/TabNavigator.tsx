@@ -31,9 +31,21 @@ const TabNavigator = () => {
         tabBarInactiveTintColor: 'gray',
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Matches" component={MatchesScreen} />
-      <Tab.Screen name="Settings" component={SettingsScreen} />
+      <Tab.Screen 
+        name="Home" 
+        component={HomeScreen} 
+        options={{ headerShown: false }}
+      />
+      <Tab.Screen 
+        name="Matches" 
+        component={MatchesScreen} 
+        options={{ headerShown: false }}
+      />
+      <Tab.Screen 
+        name="Settings" 
+        component={SettingsScreen} 
+        options={{ headerShown: false }}
+      />
     </Tab.Navigator>
   );
 }
