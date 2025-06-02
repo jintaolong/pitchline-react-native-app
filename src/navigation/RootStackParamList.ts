@@ -3,6 +3,7 @@ export type RootStackParamList = {
   Register: undefined; // Registration screen
   Login: undefined; // Login screen
   Main: undefined;
+  Prematch: undefined; // Pre-match details screen
 };
 
 export type BottomNavigatorStackParamList = {

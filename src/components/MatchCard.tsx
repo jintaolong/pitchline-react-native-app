@@ -1,90 +1,171 @@
 import React, { JSX } from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { MatchData } from '../dtos/Matches';
+import { Match, MatchData } from '../dtos/Matches';
 
 interface Props {
-  match: MatchData;
+  // match: MatchData;
+  item: Match
 }
 
-export default function MatchCard({ match }: Props): JSX.Element {
+export default function MatchCard({ item }: Props): JSX.Element {
   return (
-    <View style={styles.card}>
-      <View style={styles.header}>
-        <Text style={styles.status}>{match.status}</Text>
-        <Text style={styles.league}>{match.league}</Text>
-        <Ionicons name="heart-outline" size={20} color="#888" />
-      </View>
-
-      <View style={styles.teams}>
-        <View style={styles.team}>
-          <Image source={{ uri: match.homeAvatar }} style={styles.avatar} />
-          <Text>{match.homeTeam}</Text>
-        </View>
-        <Text style={styles.score}>{match.score}</Text>
-        <View style={styles.team}>
-          <Image source={{ uri: match.awayAvatar }} style={styles.avatar} />
-          <Text>{match.awayTeam}</Text>
+    <View style={styles.matchCard}>
+      <View style={styles.matchHeader}>
+        <Text style={styles.statusText}>{item.status}</Text>
+        <View style={styles.competitionContainer}>
+          <Text style={styles.competitionText}>{item.competition}</Text>
+          <TouchableOpacity style={styles.favoriteButton}>
+            <Text style={styles.favoriteIcon}>♡</Text>
+          </TouchableOpacity>
         </View>
       </View>
-
-      <View style={styles.footer}>
-        <Ionicons name="tv-outline" size={16} />
-        <Text style={styles.broadcaster}>{match.broadcaster}</Text>
-        <Ionicons name="eye-outline" size={16} style={{ marginLeft: 12 }} />
-        <Text>{match.viewers.toLocaleString()}</Text>
+      
+      <View style={styles.matchContent}>
+        <View style={styles.teamContainer}>
+          <View style={styles.teamInfo}>
+            <View style={styles.teamAvatar} />
+            <Text style={styles.teamName}>{item.homeTeam}</Text>
+          </View>
+          
+          <View style={styles.scoreContainer}>
+            <Text style={styles.scoreText}>
+              {item.homeScore !== null ? item.homeScore : ''}
+            </Text>
+            <Text style={styles.scoreSeparator}>-</Text>
+            <Text style={styles.scoreText}>
+              {item.awayScore !== null ? item.awayScore : ''}
+            </Text>
+          </View>
+          
+          <View style={styles.teamInfo}>
+            <Text style={styles.teamName}>{item.awayTeam}</Text>
+            <View style={styles.teamAvatar} />
+          </View>
+        </View>
+        
+        <View style={styles.matchFooter}>
+          <View style={styles.channelInfo}>
+            <Text style={styles.channelIcon}>📺</Text>
+            <Text style={styles.channelText}>{item.channel}</Text>
+          </View>
+          <View style={styles.viewersInfo}>
+            <Text style={styles.viewersIcon}>👁</Text>
+            <Text style={styles.viewersText}>{item.viewers}</Text>
+          </View>
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: '#fff',
+    matchCard: {
+    backgroundColor: 'white',
+    marginHorizontal: 15,
+    marginBottom: 10,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    elevation: 2,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  header: {
+  matchHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'center',
+    marginBottom: 15,
   },
-  status: {
-    color: '#FF3B30',
+  statusText: {
+    fontSize: 12,
+    color: '#FF6B6B',
     fontWeight: 'bold',
   },
-  league: {
-    color: '#666',
+  competitionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  teams: {
+  competitionText: {
+    fontSize: 12,
+    color: '#666',
+    marginRight: 10,
+  },
+  favoriteButton: {
+    padding: 5,
+  },
+  favoriteIcon: {
+    fontSize: 16,
+  },
+  matchContent: {
+    flex: 1,
+  },
+  teamContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 15,
   },
-  team: {
+  teamInfo: {
+    flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginBottom: 4,
+  teamAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#6B73FF',
+    marginRight: 8,
   },
-  score: {
+  teamName: {
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
+  },
+  scoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 10,
+  },
+  scoreText: {
     fontSize: 18,
     fontWeight: 'bold',
-    paddingHorizontal: 8,
+    color: '#6B73FF',
+    minWidth: 20,
+    textAlign: 'center',
   },
-  footer: {
+  scoreSeparator: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginHorizontal: 5,
+    color: '#6B73FF',
+  },
+  matchFooter: {
     flexDirection: 'row',
-    marginTop: 10,
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  broadcaster: {
-    marginLeft: 4,
-    color: '#333',
+  channelInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  channelIcon: {
+    fontSize: 12,
+    marginRight: 5,
+  },
+  channelText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  viewersInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  viewersIcon: {
+    fontSize: 12,
+    marginRight: 5,
+  },
+  viewersText: {
+    fontSize: 12,
+    color: '#666',
   },
 });

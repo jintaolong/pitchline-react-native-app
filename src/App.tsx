@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import RegisterScreen from './screens/Register';
 import { BottomNavigatorStackParamList, RootStackParamList } from './navigation/RootStackParamList';
 import TabNavigator from './navigation/TabNavigator';
+import PreMatchDetailsScreen from './screens/PreMatch';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 // const BottomNavigator = createNativeStackNavigator<BottomNavigatorStackParamList>();
@@ -20,6 +21,11 @@ export default function App() {
               <Stack.Screen 
                 name="Main"
                 component={TabNavigator}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen 
+                name="Prematch"
+                component={PreMatchDetailsScreen}
                 options={{ headerShown: false }}
               />
             </Stack.Group>

@@ -10,3 +10,17 @@ export interface MatchData {
   homeAvatar: string;
   awayAvatar: string,
 }
+
+
+export type Match = {
+  id: number;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  status: string;
+  competition: string;
+  channel: string;
+  viewers: string;
+  time: string | null;
+};

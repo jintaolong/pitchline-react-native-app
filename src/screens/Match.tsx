@@ -13,6 +13,8 @@ import {
   FlatList,
   Image,
 } from 'react-native';
+import MatchCard from '../components/MatchCard';
+import { Match } from '../dtos/Matches';
 
 const FootballMatchesScreen = () => {
   const [selectedDate, setSelectedDate] = useState(15);
@@ -152,66 +154,8 @@ const FootballMatchesScreen = () => {
     </TouchableOpacity>
   );
 
-  type Match = {
-    id: number;
-    homeTeam: string;
-    awayTeam: string;
-    homeScore: number | null;
-    awayScore: number | null;
-    status: string;
-    competition: string;
-    channel: string;
-    viewers: string;
-    time: string | null;
-  };
-
   const renderMatch = ({ item }: { item: Match }) => (
-    <View style={styles.matchCard}>
-      <View style={styles.matchHeader}>
-        <Text style={styles.statusText}>{item.status}</Text>
-        <View style={styles.competitionContainer}>
-          <Text style={styles.competitionText}>{item.competition}</Text>
-          <TouchableOpacity style={styles.favoriteButton}>
-            <Text style={styles.favoriteIcon}>♡</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-      
-      <View style={styles.matchContent}>
-        <View style={styles.teamContainer}>
-          <View style={styles.teamInfo}>
-            <View style={styles.teamAvatar} />
-            <Text style={styles.teamName}>{item.homeTeam}</Text>
-          </View>
-          
-          <View style={styles.scoreContainer}>
-            <Text style={styles.scoreText}>
-              {item.homeScore !== null ? item.homeScore : ''}
-            </Text>
-            <Text style={styles.scoreSeparator}>-</Text>
-            <Text style={styles.scoreText}>
-              {item.awayScore !== null ? item.awayScore : ''}
-            </Text>
-          </View>
-          
-          <View style={styles.teamInfo}>
-            <Text style={styles.teamName}>{item.awayTeam}</Text>
-            <View style={styles.teamAvatar} />
-          </View>
-        </View>
-        
-        <View style={styles.matchFooter}>
-          <View style={styles.channelInfo}>
-            <Text style={styles.channelIcon}>📺</Text>
-            <Text style={styles.channelText}>{item.channel}</Text>
-          </View>
-          <View style={styles.viewersInfo}>
-            <Text style={styles.viewersIcon}>👁</Text>
-            <Text style={styles.viewersText}>{item.viewers}</Text>
-          </View>
-        </View>
-      </View>
-    </View>
+    <MatchCard item={item} />
   );
 
   const renderCompetitionModal = () => (
