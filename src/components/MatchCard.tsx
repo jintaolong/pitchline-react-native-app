@@ -1,7 +1,8 @@
 import React, { JSX } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Match, MatchData } from '../dtos/Matches';
+import { Match } from '../dtos/Matches';
+import { useNavigation } from '@react-navigation/native';
 
 interface Props {
   // match: MatchData;
@@ -9,53 +10,71 @@ interface Props {
 }
 
 export default function MatchCard({ item }: Props): JSX.Element {
+  const navigation = useNavigation();
+  const onPressNavigateRoute = item.status === 'End' ? 'Postmatch' : item.status === 'LIVE' ? 'Inplay' : 'Prematch';
+
   return (
-    <View style={styles.matchCard}>
-      <View style={styles.matchHeader}>
-        <Text style={styles.statusText}>{item.status}</Text>
-        <View style={styles.competitionContainer}>
-          <Text style={styles.competitionText}>{item.competition}</Text>
-          <TouchableOpacity style={styles.favoriteButton}>
-            <Text style={styles.favoriteIcon}>♡</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-      
-      <View style={styles.matchContent}>
-        <View style={styles.teamContainer}>
-          <View style={styles.teamInfo}>
-            <View style={styles.teamAvatar} />
-            <Text style={styles.teamName}>{item.homeTeam}</Text>
+    <TouchableOpacity 
+          // style={[styles.settingsItem, isLast && styles.lastItem]} 
+          onPress={() => navigation.navigate(onPressNavigateRoute)}
+          // disabled={hasSwitch}
+        >
+        <View style={styles.matchCard}>
+          <View style={styles.matchHeader}>
+            <Text style={styles.statusText}>{item.status}</Text>
+            <View style={styles.competitionContainer}>
+              <Text style={styles.competitionText}>{item.competition}</Text>
+              <TouchableOpacity style={styles.favoriteButton}>
+                <Text style={styles.favoriteIcon}>♡</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           
-          <View style={styles.scoreContainer}>
-            <Text style={styles.scoreText}>
-              {item.homeScore !== null ? item.homeScore : ''}
-            </Text>
-            <Text style={styles.scoreSeparator}>-</Text>
-            <Text style={styles.scoreText}>
-              {item.awayScore !== null ? item.awayScore : ''}
-            </Text>
-          </View>
-          
-          <View style={styles.teamInfo}>
-            <Text style={styles.teamName}>{item.awayTeam}</Text>
-            <View style={styles.teamAvatar} />
+          <View style={styles.matchContent}>
+            <View style={styles.teamContainer}>
+              <TouchableOpacity  
+                style={styles.teamInfo}
+                onPress={() => navigation.navigate('TeamDetails')}
+              >
+                <View style={styles.teamInfo}>
+                    <View style={styles.teamAvatar} />
+                    <Text style={styles.teamName}>{item.homeTeam}</Text>
+                </View>
+              </TouchableOpacity>
+              <View style={styles.scoreContainer}>
+                <Text style={styles.scoreText}>
+                  {item.homeScore !== null ? item.homeScore : ''}
+                </Text>
+                <Text style={styles.scoreSeparator}>-</Text>
+                <Text style={styles.scoreText}>
+                  {item.awayScore !== null ? item.awayScore : ''}
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.teamInfo}
+                onPress={() => navigation.navigate('TeamDetails')}
+              >
+                <View style={styles.teamInfo}>    
+                    <Text style={styles.teamName}>{item.awayTeam}</Text>    
+                    <View style={styles.teamAvatar} />
+                </View>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.matchFooter}>
+              <View style={styles.channelInfo}>
+                <Text style={styles.channelIcon}>📺</Text>
+                <Text style={styles.channelText}>{item.channel}</Text>
+              </View>
+              <View style={styles.viewersInfo}>
+                <Text style={styles.viewersIcon}>👁</Text>
+                <Text style={styles.viewersText}>{item.viewers}</Text>
+              </View>
+            </View>
           </View>
         </View>
-        
-        <View style={styles.matchFooter}>
-          <View style={styles.channelInfo}>
-            <Text style={styles.channelIcon}>📺</Text>
-            <Text style={styles.channelText}>{item.channel}</Text>
-          </View>
-          <View style={styles.viewersInfo}>
-            <Text style={styles.viewersIcon}>👁</Text>
-            <Text style={styles.viewersText}>{item.viewers}</Text>
-          </View>
-        </View>
-      </View>
-    </View>
+    </TouchableOpacity>
+    
   );
 }
 
