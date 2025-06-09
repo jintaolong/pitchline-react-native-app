@@ -9,11 +9,25 @@ import {
   StatusBar,
   Dimensions,
 } from 'react-native';
+import PitchlinePieChart from '../components/PieChart';
+import PitchlineComparisonBarChart from '../components/ComparisonBarChart';
+import WDLBarChart from '../components/WDLBarChart';
+import Slider from '@react-native-community/slider';
 
 const { width } = Dimensions.get('window');
 
 const PreMatchDetailsScreen = () => {
-  const [summaryWindow, setSummaryWindow] = useState(10); // Years
+  const summaryOptions = [
+    { label: '1 Month', value: 1 },
+    { label: '3 Months', value: 3 },
+    { label: '6 Months', value: 6 },
+    { label: '1 Year', value: 12 },
+    { label: '2 Years', value: 24 },
+    // { label: 'Last 5 Years', value: 60 },
+    // { label: 'Last 10 Years', value: 120 },
+  ];
+
+  const [summaryWindow, setSummaryWindow] = useState(3); // Default: last 3 months
 
   const manchesterLineup = [
     { number: 24, name: "André Onana" },
@@ -50,6 +64,24 @@ const PreMatchDetailsScreen = () => {
     { result: 'D', color: '#F59E0B' },
     { result: 'D', color: '#F59E0B' }
   ];
+
+  const goalScored = [
+    {
+      key: "Man Utd",
+      value: 40,
+      svg: { fill: '#6366F1' },
+    },
+    {
+      key: "Arsenal",
+      value: 30,
+      svg: { fill: '#3B82F6' },
+    },
+  ]
+
+  const getSummaryLabel = (value: number) => {
+    const found = summaryOptions.find(opt => opt.value === value);
+    return found ? found.label : `Last ${value} Months`;
+  };
 
   return (
     <>
@@ -133,67 +165,80 @@ const PreMatchDetailsScreen = () => {
             {/* Summary Window */}
             <View style={styles.summaryContainer}>
               <Text style={styles.summaryLabel}>Summary window:</Text>
-              <Text style={styles.summaryValue}>Last 10 Years</Text>
+              <Text style={styles.summaryValue}>{getSummaryLabel(summaryWindow)}</Text>
+            </View>
+            <View style={{ width: '100%', height: 24, justifyContent: 'center', marginBottom: 16 }}>
+              {/* Custom thick track */}
+              <View
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                height: 2,
+                borderRadius: 6,
+                backgroundColor: '#6366F1',
+              }}
+              />
+              <Slider
+                minimumValue={summaryOptions[0].value}
+                maximumValue={summaryOptions[summaryOptions.length - 1].value}
+                step={1}
+                value={summaryWindow}
+                onValueChange={(val: number) => {
+                  const nearest = summaryOptions.reduce((prev, curr) =>
+                  Math.abs(curr.value - val) < Math.abs(prev.value - val) ? curr : prev
+                  );
+                  setSummaryWindow(nearest.value);
+                }}
+                minimumTrackTintColor="transparent"
+                maximumTrackTintColor="transparent"
+                thumbTintColor="#6366F1"
+                trackStyle={{ height: 12, borderRadius: 6, backgroundColor: 'transparent' }}
+                style={{ height: 24 }}
+              />
+            </View>
+            
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+              {summaryOptions.filter((opt) => {
+                return opt.value == 1 || opt.value == 12 || opt.value == 24;
+              }).map(opt => (
+                <Text key={opt.value} style={{ fontSize: 10, color: '#6B7280' }}>{opt.label}</Text>
+              ))}
             </View>
 
             {/* Win/Draw/Loss */}
             <View style={styles.statsRow}>
               <Text style={styles.statsLabel}>Win/Draw/Loss</Text>
-              <View style={styles.wdlContainer}>
-                <View style={[styles.wdlBar, { backgroundColor: '#6366F1', flex: 85 }]}>
-                  <Text style={styles.wdlText}>85</Text>
-                </View>
-                <View style={[styles.wdlBar, { backgroundColor: '#D1D5DB', flex: 53 }]}>
-                  <Text style={styles.wdlText}>53</Text>
-                </View>
-                <View style={[styles.wdlBar, { backgroundColor: '#3B82F6', flex: 69 }]}>
-                  <Text style={styles.wdlText}>69</Text>
-                </View>
-              </View>
+              <WDLBarChart win={85} draw={53} loss={69} />
             </View>
 
             {/* Goals Scored */}
             <View style={styles.statsRow}>
               <Text style={styles.statsLabel}>Goals scored</Text>
               <View style={styles.goalsContainer}>
-                <View style={styles.goalsStat}>
-                  <View style={styles.goalsIndicator} />
-                  <Text style={styles.goalsTeam}>MAN</Text>
-                  <Text style={styles.goalsNumber}>78</Text>
-                </View>
-                <View style={styles.pieChart}>
-                  <View style={styles.pieSlice} />
-                </View>
-                <View style={styles.goalsStat}>
-                  <Text style={styles.goalsNumber}>43</Text>
-                  <Text style={styles.goalsTeam}>ARS</Text>
-                  <View style={[styles.goalsIndicator, styles.arsenalIndicator]} />
-                </View>
+                <PitchlinePieChart
+                  data={goalScored} 
+                  radius={50}
+                />
               </View>
             </View>
 
             {/* Goals Conceded */}
             <View style={styles.statsRow}>
               <Text style={styles.statsLabel}>Goals conceded</Text>
-              <View style={styles.comparisonBar}>
-                <Text style={styles.comparisonNumber}>33</Text>
-                <View style={styles.comparisonBarContainer}>
-                  <View style={[styles.comparisonBarFill, { width: '60%', backgroundColor: '#6366F1' }]} />
-                </View>
-                <Text style={styles.comparisonNumber}>22</Text>
-              </View>
+              <PitchlineComparisonBarChart
+                a={33}
+                b={22}
+              />
             </View>
 
             {/* Shots */}
             <View style={styles.statsRow}>
               <Text style={styles.statsLabel}>Shots</Text>
-              <View style={styles.comparisonBar}>
-                <Text style={styles.comparisonNumber}>234</Text>
-                <View style={styles.comparisonBarContainer}>
-                  <View style={[styles.comparisonBarFill, { width: '52%', backgroundColor: '#6366F1' }]} />
-                </View>
-                <Text style={styles.comparisonNumber}>220</Text>
-              </View>
+              <PitchlineComparisonBarChart
+                a={234}
+                b={220}
+              />
             </View>
           </View>
 
@@ -224,22 +269,6 @@ const PreMatchDetailsScreen = () => {
             </View>
           </View>
         </ScrollView>
-
-        {/* Bottom Navigation */}
-        {/* <View style={styles.bottomNav}>
-          <TouchableOpacity style={styles.navItem}>
-            <Text style={styles.navIcon}>🏠</Text>
-            <Text style={styles.navLabel}>Home</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.navItem, styles.activeNavItem]}>
-            <Text style={styles.navIcon}>📊</Text>
-            <Text style={[styles.navLabel, styles.activeNavLabel]}>Matches</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem}>
-            <Text style={styles.navIcon}>⚙️</Text>
-            <Text style={styles.navLabel}>Settings</Text>
-          </TouchableOpacity>
-        </View> */}
       </SafeAreaView>
     </>
   );
@@ -328,6 +357,7 @@ const styles = StyleSheet.create({
   },
   venue: {
     fontSize: 12,
+    textAlign: 'center',
     color: '#9CA3AF',
   },
   section: {
@@ -424,62 +454,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  goalsStat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  goalsIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#6366F1',
-  },
-  arsenalIndicator: {
-    backgroundColor: '#3B82F6',
-  },
-  goalsTeam: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  goalsNumber: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-  pieChart: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#6366F1',
-  },
-  pieSlice: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
-  comparisonBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  comparisonNumber: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    minWidth: 30,
-  },
-  comparisonBarContainer: {
-    flex: 1,
-    height: 8,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 4,
-  },
-  comparisonBarFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
   standingsContainer: {
     gap: 12,
   },
@@ -526,33 +500,6 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     width: 30,
     textAlign: 'center',
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-  },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  activeNavItem: {
-    borderTopWidth: 2,
-    borderTopColor: '#6366F1',
-  },
-  navIcon: {
-    fontSize: 20,
-    marginBottom: 4,
-  },
-  navLabel: {
-    fontSize: 12,
-    color: '#9CA3AF',
-  },
-  activeNavLabel: {
-    color: '#6366F1',
-    fontWeight: '600',
   },
 });
 

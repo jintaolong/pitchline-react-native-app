@@ -175,22 +175,6 @@ const PlayerDetailsScreen = () => {
             </View>
           </View>
         </ScrollView>
-
-        {/* Bottom Navigation */}
-        <View style={styles.bottomNav}>
-          <TouchableOpacity style={styles.navItem}>
-            <Text style={styles.navIcon}>🏠</Text>
-            <Text style={styles.navLabel}>Home</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.navItem, styles.activeNavItem]}>
-            <Text style={styles.navIcon}>📊</Text>
-            <Text style={[styles.navLabel, styles.activeNavLabel]}>Matches</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem}>
-            <Text style={styles.navIcon}>⚙️</Text>
-            <Text style={styles.navLabel}>Settings</Text>
-          </TouchableOpacity>
-        </View>
       </SafeAreaView>
     </>
   );
