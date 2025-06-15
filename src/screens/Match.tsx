@@ -1,6 +1,6 @@
 // This code is a React Native component for displaying football matches.
 // It includes a calendar for selecting dates, filters for competitions, and a list of matches with details.
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -15,24 +15,78 @@ import {
 } from 'react-native';
 import MatchCard from '../components/MatchCard';
 import { Match } from '../dtos/Matches';
+import { getMatchLit } from '../services/matchService';
+import { FixtureResponse, Status } from '../dtos/Fixtures';
+import log from '../utils/logger';
+
+
+const getWeekDates = () => {
+  const today = new Date();
+  const startOfWeek = new Date(today);
+  const day = today.getDay();
+  // getDay(): 0 (Sun) - 6 (Sat), so for Monday (1), subtract (day === 0 ? 6 : day - 1)
+  const diff = day === 0 ? -6 : 1 - day;
+  startOfWeek.setDate(today.getDate() + diff);
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(startOfWeek);
+    date.setDate(startOfWeek.getDate() + i);
+    dates.push(date);
+  }
+  return dates;
+}
+
+
+const formatStatus = (status: Status, fixtureStartDate: string) : string => {
+  let out = ""
+  const startDate = new Date(fixtureStartDate);
+  const today = new Date();
+  if (status.long === 'Not Started') {
+    // You can now use startDate as a Date object
+    let prefix = '';
+    if (
+      startDate.getDate() === today.getDate() &&
+      startDate.getMonth() === today.getMonth() &&
+      startDate.getFullYear() === today.getFullYear()
+    ) {
+      prefix = 'Today';
+    } else {
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+      if (
+        startDate.getDate() === tomorrow.getDate() &&
+        startDate.getMonth() === tomorrow.getMonth() &&
+        startDate.getFullYear() === tomorrow.getFullYear()
+      ) {
+        prefix = 'Tomorrow';
+      } else {
+        // Use the exact date as prefix in format YYYY-MM-DD
+        prefix = `${startDate.getFullYear()}-${(startDate.getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}-${startDate.getDate().toString().padStart(2, '0')}`;
+      }
+    }
+    out = `${prefix} ${startDate.getHours()}:${startDate.getMinutes().toString().padStart(2, '0')}`;
+  } else if (status.long === 'End') {
+    out = 'End';
+  } else{
+    // Inplay
+    out = `LIVE ${status.elapsed ? status.elapsed : 0} ${status.extra ? `+${status.extra}` : ''}`;
+  }
+  // TOOO: handle half time?
+  return out;
+}
+
+
 
 const FootballMatchesScreen = () => {
-  const [selectedDate, setSelectedDate] = useState(15);
+  const today = new Date();
+  const [selectedDate, setSelectedDate] = useState<Date>(today);
+  const [fixtures, setFixtures] = useState<Match[]>([]);
   const [selectedFilters, setSelectedFilters] = useState(['Women']);
   const [showCompetitionModal, setShowCompetitionModal] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-
-  // Sample data
-  const weekDates = [
-    { day: 'M', date: 11 },
-    { day: 'T', date: 12 },
-    { day: 'W', date: 13 },
-    { day: 'T', date: 14 },
-    { day: 'F', date: 15 },
-    { day: 'S', date: 16 },
-    { day: 'S', date: 17 },
-  ];
 
   const competitions = [
     'Premier League',
@@ -44,80 +98,127 @@ const FootballMatchesScreen = () => {
     'Europa League',
   ];
 
-  const matches = [
-    {
-      id: 1,
-      homeTeam: 'West Ham Utd',
-      awayTeam: 'Walsall',
-      homeScore: 0,
-      awayScore: 1,
-      status: 'End',
-      competition: 'Premier League',
-      channel: 'Sky Sports',
-      viewers: '180,000',
-      time: null,
-    },
-    {
-      id: 2,
-      homeTeam: 'Manchester Utd',
-      awayTeam: 'Arsenal',
-      homeScore: 2,
-      awayScore: 1,
-      status: 'LIVE',
-      competition: 'Premier League',
-      channel: 'Sky Sports',
-      viewers: '450,000',
-      time: null,
-    },
-    {
-      id: 3,
-      homeTeam: 'Real Madrid',
-      awayTeam: 'Barcelona',
-      homeScore: null,
-      awayScore: null,
-      status: 'Today 19:45',
-      competition: 'La Liga',
-      channel: 'ITV Sport',
-      viewers: '600,000',
-      time: 'Today 19:45',
-    },
-    {
-      id: 4,
-      homeTeam: 'Bayern Munich',
-      awayTeam: 'Borussia Dortmund',
-      homeScore: null,
-      awayScore: null,
-      status: 'Today 20:00',
-      competition: 'Bundesliga',
-      channel: 'BT Sport',
-      viewers: '350,000',
-      time: 'Today 20:00',
-    },
-    {
-      id: 5,
-      homeTeam: 'Juventus',
-      awayTeam: 'Inter Milan',
-      homeScore: null,
-      awayScore: null,
-      status: 'Tomorrow 15:00',
-      competition: 'Serie A',
-      channel: 'ESPN',
-      viewers: '300,000',
-      time: 'Tomorrow 15:00',
-    },
-    {
-      id: 6,
-      homeTeam: 'PSG',
-      awayTeam: 'Marseille',
-      homeScore: null,
-      awayScore: null,
-      status: 'Tomorrow 17:00',
-      competition: 'Ligue 1',
-      channel: 'beIN Sports',
-      viewers: '250,000',
-      time: 'Tomorrow 17:00',
-    },
-  ];
+
+  const weekDates = getWeekDates();
+
+  const updateFixtures = () => {
+    let matches: Match[] = [];
+    log.debug(`Updating fixtures for date: ${selectedDate.toLocaleDateString()}`);
+    const deltaDay = Math.ceil((selectedDate.getTime() - today.getTime()) / 1000 / 1000 / 60 /60 / 24) + 1;
+    // const deltaDay = selectedDate - today
+    log.debug(deltaDay);
+    const matchListResponse = getMatchLit(deltaDay).then(
+      (data: FixtureResponse[]) => {
+        matches = data.map((fixture) => {
+          // const isMatchStarted = fixture.fixture.fixture.status < '
+          // const isMatchEnded = fixture.fixture.status.long === 'Match Finished';
+          const homeTeam = fixture.fixture.teams.home.name;
+          const awayTeam = fixture.fixture.teams.away.name;
+          const homeLogo = fixture.fixture.teams.home.logo ? fixture.fixture.teams.home.logo : '';
+          const awayLogo = fixture.fixture.teams.away.logo ? fixture.fixture.teams.away.logo : '';
+          const homeScore = fixture.fixture.goals.home ? fixture.fixture.goals.home : '';
+          const awayScore = fixture.fixture.goals.away ? fixture.fixture.goals.away : '';
+          const status = formatStatus(fixture.fixture.fixture.status, fixture.fixture.fixture.date);
+          const competition = fixture.fixture.league.name || 'Unknown Competition';
+          const channel = 'Sky Sports'; // Placeholder, replace with actual channel data if available
+          const viewers = '180,000'; // Placeholder, replace with actual viewers data if available
+          // TODO: Covert date to local time of user
+          const time = fixture.fixture.fixture.date ? new Date(fixture.fixture.fixture.date).toLocaleTimeString() : null;
+
+          return {
+            id: fixture.fixture.fixture.id,
+            homeTeam: homeTeam,
+            awayTeam: awayTeam,
+            homeLogo: homeLogo,
+            awayLogo: awayLogo,
+            homeScore: homeScore,
+            awayScore: awayScore,
+            status: status,
+            competition: competition,
+            channel: channel,
+            viewers: viewers,
+            time: time,
+          } as Match;
+        });
+        setFixtures(matches);
+      }
+  );
+  }
+  
+  // const matches: Match[] = [
+  //   {
+  //     id: 1,
+  //     homeTeam: 'West Ham Utd',
+  //     awayTeam: 'Walsall',
+  //     homeScore: 0,
+  //     awayScore: 1,
+  //     status: 'End',
+  //     competition: 'Premier League',
+  //     channel: 'Sky Sports',
+  //     viewers: '180,000',
+  //     time: null,
+  //   },
+  //   {
+  //     id: 2,
+  //     homeTeam: 'Manchester Utd',
+  //     awayTeam: 'Arsenal',
+  //     homeScore: 2,
+  //     awayScore: 1,
+  //     status: 'LIVE',
+  //     competition: 'Premier League',
+  //     channel: 'Sky Sports',
+  //     viewers: '450,000',
+  //     time: null,
+  //   },
+  //   {
+  //     id: 3,
+  //     homeTeam: 'Real Madrid',
+  //     awayTeam: 'Barcelona',
+  //     homeScore: null,
+  //     awayScore: null,
+  //     status: 'Today 19:45',
+  //     competition: 'La Liga',
+  //     channel: 'ITV Sport',
+  //     viewers: '600,000',
+  //     time: 'Today 19:45',
+  //   },
+  //   {
+  //     id: 4,
+  //     homeTeam: 'Bayern Munich',
+  //     awayTeam: 'Borussia Dortmund',
+  //     homeScore: null,
+  //     awayScore: null,
+  //     status: 'Today 20:00',
+  //     competition: 'Bundesliga',
+  //     channel: 'BT Sport',
+  //     viewers: '350,000',
+  //     time: 'Today 20:00',
+  //   },
+  //   {
+  //     id: 5,
+  //     homeTeam: 'Juventus',
+  //     awayTeam: 'Inter Milan',
+  //     homeScore: null,
+  //     awayScore: null,
+  //     status: 'Tomorrow 15:00',
+  //     competition: 'Serie A',
+  //     channel: 'ESPN',
+  //     viewers: '300,000',
+  //     time: 'Tomorrow 15:00',
+  //   },
+  //   {
+  //     id: 6,
+  //     homeTeam: 'PSG',
+  //     awayTeam: 'Marseille',
+  //     homeScore: null,
+  //     awayScore: null,
+  //     status: 'Tomorrow 17:00',
+  //     competition: 'Ligue 1',
+  //     channel: 'beIN Sports',
+  //     viewers: '250,000',
+  //     time: 'Tomorrow 17:00',
+  //   },
+  // ];
 
   const filteredCompetitions = competitions.filter(comp =>
     comp.toLowerCase().includes(searchText.toLowerCase())
@@ -131,25 +232,25 @@ const FootballMatchesScreen = () => {
     }
   };
 
-  const renderCalendarDate = ({ item }: { item: { day: string; date: number } }) => (
+  const renderCalendarDate = ({ item }: { item: Date }) => (
     <TouchableOpacity
       style={[
         styles.dateButton,
-        selectedDate === item.date && styles.selectedDateButton
+        selectedDate.getDate() === item.getDate() && styles.selectedDateButton
       ]}
-      onPress={() => setSelectedDate(item.date)}
+      onPress={() => setSelectedDate(item)}
     >
       <Text style={[
         styles.dayText,
-        selectedDate === item.date && styles.selectedDateText
+        selectedDate.getDate() === item.getDate() && styles.selectedDateText
       ]}>
-        {item.day}
+        {item.toLocaleDateString('en-US', { weekday: 'short' })}
       </Text>
       <Text style={[
         styles.dateText,
-        selectedDate === item.date && styles.selectedDateText
+        selectedDate.getDate() === item.getDate() && styles.selectedDateText
       ]}>
-        {item.date}
+        {item.getDate()}
       </Text>
     </TouchableOpacity>
   );
@@ -201,6 +302,9 @@ const FootballMatchesScreen = () => {
     </Modal>
   );
 
+  useEffect(
+    updateFixtures, [selectedDate]
+  )
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -221,10 +325,10 @@ const FootballMatchesScreen = () => {
           <FlatList
             data={weekDates}
             renderItem={renderCalendarDate}
-            keyExtractor={(item) => item.date.toString()}
+            keyExtractor={(item) => item.getDate().toString()}
             horizontal
             showsHorizontalScrollIndicator={false}
-            scrollEnabled={false}
+            scrollEnabled={true}
             contentContainerStyle={styles.calendarContainer}
           />
         </View>
@@ -271,7 +375,7 @@ const FootballMatchesScreen = () => {
 
         {/* Matches List */}
         <FlatList
-          data={matches}
+          data={fixtures}
           renderItem={renderMatch}
           keyExtractor={(item) => item.id.toString()}
           scrollEnabled={false}

@@ -16,6 +16,8 @@ export type Match = {
   id: number;
   homeTeam: string;
   awayTeam: string;
+  homeLogo?: string;
+  awayLogo?: string;
   homeScore: number | null;
   awayScore: number | null;
   status: string;
