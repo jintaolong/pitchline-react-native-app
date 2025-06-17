@@ -24,5 +24,6 @@ export type Match = {
   competition: string;
   channel: string;
   viewers: string;
+  kickoffTime: Date | null;
   time: string | null;
 };

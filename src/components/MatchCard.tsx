@@ -37,8 +37,12 @@ export default function MatchCard({ item }: Props): JSX.Element {
                 onPress={() => navigation.navigate('TeamDetails')}
               >
                 <View style={styles.teamInfo}>
+                  {item.homeLogo ? (
+                    <Image source={{ uri: item.homeLogo }} style={[styles.teamAvatar, styles.teamAvatarPlaceholder]} />
+                  ) : (
                     <View style={styles.teamAvatar} />
-                    <Text style={styles.teamName}>{item.homeTeam}</Text>
+                  )}
+                  <Text style={styles.teamName}>{item.homeTeam}</Text>
                 </View>
               </TouchableOpacity>
               <View style={styles.scoreContainer}>
@@ -54,9 +58,13 @@ export default function MatchCard({ item }: Props): JSX.Element {
                 style={styles.teamInfo}
                 onPress={() => navigation.navigate('TeamDetails')}
               >
-                <View style={styles.teamInfo}>    
-                    <Text style={styles.teamName}>{item.awayTeam}</Text>    
-                    <View style={styles.teamAvatar} />
+                <View style={styles.teamInfo}>
+                  {item.awayLogo ? (
+                  <Image source={{ uri: item.awayLogo }} style={[styles.teamAvatar, styles.teamAvatarPlaceholder]} />
+                  ) : (
+                  <View style={styles.teamAvatar} />
+                  )}
+                  <Text style={styles.teamName}>{item.awayTeam}</Text>
                 </View>
               </TouchableOpacity>
             </View>
@@ -134,6 +142,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#6B73FF',
     marginRight: 8,
+  },
+  teamAvatarPlaceholder: {
+    backgroundColor: '#FFFFFF',
   },
   teamName: {
     fontSize: 14,

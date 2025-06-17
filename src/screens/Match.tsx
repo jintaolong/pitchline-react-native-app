@@ -83,7 +83,7 @@ const FootballMatchesScreen = () => {
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<Date>(today);
   const [fixtures, setFixtures] = useState<Match[]>([]);
-  const [selectedFilters, setSelectedFilters] = useState(['Women']);
+  const [selectedFilters, setSelectedFilters] = useState(['All']);
   const [showCompetitionModal, setShowCompetitionModal] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -137,6 +137,7 @@ const FootballMatchesScreen = () => {
             competition: competition,
             channel: channel,
             viewers: viewers,
+            kickoffTime: fixture.fixture.fixture.date ? new Date(fixture.fixture.fixture.date) : null,
             time: time,
           } as Match;
         });
@@ -305,6 +306,7 @@ const FootballMatchesScreen = () => {
   useEffect(
     updateFixtures, [selectedDate]
   )
+  
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -323,13 +325,13 @@ const FootballMatchesScreen = () => {
         {/* Calendar */}
         <View style={styles.calendar}>
           <FlatList
-            data={weekDates}
-            renderItem={renderCalendarDate}
-            keyExtractor={(item) => item.getDate().toString()}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            scrollEnabled={true}
-            contentContainerStyle={styles.calendarContainer}
+        data={weekDates}
+        renderItem={renderCalendarDate}
+        keyExtractor={(item) => item.getDate().toString()}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        scrollEnabled={true}
+        contentContainerStyle={styles.calendarContainer}
           />
         </View>
 
@@ -338,44 +340,59 @@ const FootballMatchesScreen = () => {
           <Text style={styles.filtersTitle}>Filters</Text>
           
           <View style={styles.filterButtons}>
-            <TouchableOpacity
-              style={[styles.filterButton, styles.activeFilterButton]}
-              onPress={() => toggleFilter('Women')}
-            >
-              <Text style={[styles.filterButtonText, styles.activeFilterButtonText]}>
-                Women
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.filterButton}
-              onPress={() => setShowCompetitionModal(true)}
-            >
-              <Text style={styles.filterButtonText}>Competition ▼</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.filterButton}
-              onPress={() => toggleFilter('Live Chat')}
-            >
-              <Text style={styles.filterButtonText}>Live Chat</Text>
-            </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, styles.activeFilterButton]}
+          onPress={() => toggleFilter('All')}
+        >
+          <Text style={[styles.filterButtonText, styles.activeFilterButtonText]}>
+            All
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => toggleFilter('Women')}
+        >
+          <Text style={styles.filterButtonText}>
+            Women
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setShowCompetitionModal(true)}
+        >
+          <Text style={styles.filterButtonText}>Competition ▼</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => toggleFilter('Live Chat')}
+        >
+          <Text style={styles.filterButtonText}>Live Chat</Text>
+        </TouchableOpacity>
           </View>
           
           <TouchableOpacity
-            style={styles.advancedFiltersButton}
-            onPress={() => setShowAdvancedFilters(!showAdvancedFilters)}
+        style={styles.advancedFiltersButton}
+        onPress={() => setShowAdvancedFilters(!showAdvancedFilters)}
           >
-            <Text style={styles.advancedFiltersText}>Advanced Filters</Text>
-            <Text style={styles.advancedFiltersIcon}>
-              {showAdvancedFilters ? '▲' : '▼'}
-            </Text>
+        <Text style={styles.advancedFiltersText}>Advanced Filters</Text>
+        <Text style={styles.advancedFiltersIcon}>
+          {showAdvancedFilters ? '▲' : '▼'}
+        </Text>
           </TouchableOpacity>
         </View>
 
         {/* Matches List */}
         <FlatList
-          data={fixtures}
+          data={
+        [...fixtures].sort((a, b) => {
+          // If time is null, treat as far future
+          const aTime = a.kickoffTime ? a.kickoffTime.getTime() : Number.MAX_SAFE_INTEGER;
+          const bTime = b.kickoffTime ? b.kickoffTime.getTime() : Number.MAX_SAFE_INTEGER;
+          return aTime - bTime;
+        })
+          }
           renderItem={renderMatch}
           keyExtractor={(item) => item.id.toString()}
           scrollEnabled={false}
