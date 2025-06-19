@@ -11,7 +11,6 @@ import {
   Modal,
   TextInput,
   FlatList,
-  Image,
 } from 'react-native';
 import MatchCard from '../components/MatchCard';
 import { Match } from '../dtos/Matches';
@@ -20,17 +19,22 @@ import { FixtureResponse, Status } from '../dtos/Fixtures';
 import log from '../utils/logger';
 
 
-const getWeekDates = () => {
-  const today = new Date();
-  const startOfWeek = new Date(today);
-  const day = today.getDay();
-  // getDay(): 0 (Sun) - 6 (Sat), so for Monday (1), subtract (day === 0 ? 6 : day - 1)
+const getWeekDates = (selectedDate: Date = new Date()) => {
+  // Find the Monday of the week containing selectedDate
+  const day = selectedDate.getDay();
   const diff = day === 0 ? -6 : 1 - day;
-  startOfWeek.setDate(today.getDate() + diff);
+  const startOfWeek = new Date(selectedDate);
+  startOfWeek.setDate(selectedDate.getDate() + diff);
+
+  // Calculate the start date (2 weeks before this week's Monday)
+  const startDate = new Date(startOfWeek);
+  startDate.setDate(startOfWeek.getDate() - 14);
+
+  // Generate 5 weeks (2 before, current, 2 after) = 35 days
   const dates = [];
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(startOfWeek);
-    date.setDate(startOfWeek.getDate() + i);
+  for (let i = 0; i < 35; i++) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + i);
     dates.push(date);
   }
   return dates;
@@ -126,16 +130,6 @@ const FootballMatchesScreen = () => {
     }
     let filtered = allFixtures;
 
-    // if (selectedFilters.includes('Women')) {
-    //   filtered = filtered.filter(f =>
-    //     f.competition?.toLowerCase().includes('women')
-    //   );
-    // }
-    // if (selectedFilters.includes('Live Chat')) {
-    //   filtered = filtered.filter(f =>
-    //     f.status?.toLowerCase().includes('live')
-    //   );
-    // }
     const compFilters = selectedFilters.filter(f =>
       f !== 'All' && f !== 'Women' && f !== 'Live Chat'
     );
@@ -150,15 +144,6 @@ const FootballMatchesScreen = () => {
     log.debug(`Filtered fixtures count: ${filtered.length}`);
     setFixtures(filtered);
   }, [selectedFilters, allFixtures]);
-
-  // useEffect(() => {
-  //   // Update competitions list whenever fixtures change
-  //   const uniqueCompetitions = Array.from(
-  //     new Set(fixtures.map(f => f.competition || 'Other'))
-  //   );
-  //   setCompetitions(uniqueCompetitions);
-  // }, [allFixtures]);
-
 
   const weekDates = getWeekDates();
 
@@ -393,13 +378,24 @@ const FootballMatchesScreen = () => {
         {/* Calendar */}
         <View style={styles.calendar}>
           <FlatList
-        data={weekDates}
-        renderItem={renderCalendarDate}
-        keyExtractor={(item) => item.getDate().toString()}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        scrollEnabled={true}
-        contentContainerStyle={styles.calendarContainer}
+            data={weekDates}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.calendarContainer}
+            keyExtractor={(item: Date, index: number) => item.toISOString() + '-' + index}
+            renderItem={renderCalendarDate}
+            pagingEnabled={false}
+            snapToAlignment="start"
+            decelerationRate="fast"
+            bounces={true}
+            scrollEnabled={true}
+            extraData={selectedDate}
+            initialScrollIndex={14} // Center today (the 15th day in 0-based index of 35 days)
+            getItemLayout={(_, index) => ({
+              length: 60, // approximate width of each date button (adjust if needed)
+              offset: 60 * index,
+              index,
+            })}
           />
         </View>
 
