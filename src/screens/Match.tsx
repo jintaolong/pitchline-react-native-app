@@ -82,26 +82,87 @@ const formatStatus = (status: Status, fixtureStartDate: string) : string => {
 const FootballMatchesScreen = () => {
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<Date>(today);
+  const [allFixtures, setAllFixtures] = useState<Match[]>([]);
   const [fixtures, setFixtures] = useState<Match[]>([]);
   const [selectedFilters, setSelectedFilters] = useState(['All']);
+  // const [filteredFixtures, setFilteredFixtures] = useState<Match[]>([]);
   const [showCompetitionModal, setShowCompetitionModal] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  const competitions = [
-    'Premier League',
-    'La Liga',
-    'Bundesliga',
-    'Serie A',
-    'Ligue 1',
-    'Champions League',
-    'Europa League',
-  ];
+  // "allCompetitions" is the full list, updated only when allFixtures changes
+  const [allCompetitions, setAllCompetitions] = useState<string[]>([]);
+  // "competitions" is the filtered list, updated when searchText changes
+  const [competitions, setCompetitions] = useState<string[]>([]);
+
+  // Update allCompetitions when allFixtures changes
+  useEffect(() => {
+    const uniqueCompetitions = Array.from(
+      new Set(allFixtures.map(f => f.competition || 'Other'))
+    );
+    setAllCompetitions(uniqueCompetitions);
+    setCompetitions(uniqueCompetitions); // Reset competitions when fixtures change
+  }, [allFixtures]);
+
+  // Update competitions when searchText changes
+  useEffect(() => {
+    if (searchText.trim() === '') {
+      setCompetitions(allCompetitions);
+    } else {
+      setCompetitions(
+        allCompetitions.filter(comp =>
+          comp.toLowerCase().includes(searchText.toLowerCase())
+        )
+      );
+    }
+  }, [searchText, allCompetitions]);
+
+  // Update filtered fixtures when filters or allFixtures change
+  useEffect(() => {
+    log.debug(`Selected filters: ${selectedFilters.join(', ')}`);
+    if (selectedFilters.includes('All')) {
+      setFixtures(allFixtures);
+      return;
+    }
+    let filtered = allFixtures;
+
+    // if (selectedFilters.includes('Women')) {
+    //   filtered = filtered.filter(f =>
+    //     f.competition?.toLowerCase().includes('women')
+    //   );
+    // }
+    // if (selectedFilters.includes('Live Chat')) {
+    //   filtered = filtered.filter(f =>
+    //     f.status?.toLowerCase().includes('live')
+    //   );
+    // }
+    const compFilters = selectedFilters.filter(f =>
+      f !== 'All' && f !== 'Women' && f !== 'Live Chat'
+    );
+    if (compFilters.length > 0) {
+      filtered = filtered.filter(f =>
+        compFilters.includes(f.competition)
+      );
+    }
+    if (selectedFilters.length === 0) {
+      filtered = []; // If no filters selected, show all fixtures
+    }
+    log.debug(`Filtered fixtures count: ${filtered.length}`);
+    setFixtures(filtered);
+  }, [selectedFilters, allFixtures]);
+
+  // useEffect(() => {
+  //   // Update competitions list whenever fixtures change
+  //   const uniqueCompetitions = Array.from(
+  //     new Set(fixtures.map(f => f.competition || 'Other'))
+  //   );
+  //   setCompetitions(uniqueCompetitions);
+  // }, [allFixtures]);
 
 
   const weekDates = getWeekDates();
 
-  const updateFixtures = () => {
+  const updateAllFixtures = () => {
     let matches: Match[] = [];
     log.debug(`Updating fixtures for date: ${selectedDate.toLocaleDateString()}`);
     const deltaDay = Math.ceil((selectedDate.getTime() - today.getTime()) / 1000 / 1000 / 60 /60 / 24) + 1;
@@ -141,7 +202,7 @@ const FootballMatchesScreen = () => {
             time: time,
           } as Match;
         });
-        setFixtures(matches);
+        setAllFixtures(matches);
       }
   );
   }
@@ -226,10 +287,17 @@ const FootballMatchesScreen = () => {
   );
 
   const toggleFilter = (filter: string) => {
-    if (selectedFilters.includes(filter)) {
-      setSelectedFilters(selectedFilters.filter(f => f !== filter));
+    log.debug(`Toggling filter: ${filter}`);
+    let temp_filters = selectedFilters.slice();
+    // If toggling a filter other than "All", remove "All" from selectedFilters
+    if (filter !== 'All' && temp_filters.includes('All')) {
+      temp_filters = temp_filters.filter(f => f !== 'All');
+    }
+    if (temp_filters.includes(filter)) {
+      // unselect the filter if it gets double selected
+      setSelectedFilters(temp_filters.filter(f => f !== filter));
     } else {
-      setSelectedFilters([...selectedFilters, filter]);
+      setSelectedFilters([...temp_filters, filter]);
     }
   };
 
@@ -285,7 +353,7 @@ const FootballMatchesScreen = () => {
         />
         
         <FlatList
-          data={filteredCompetitions}
+          data={competitions}
           keyExtractor={(item) => item}
           renderItem={({ item }) => (
             <TouchableOpacity
@@ -304,7 +372,7 @@ const FootballMatchesScreen = () => {
   );
 
   useEffect(
-    updateFixtures, [selectedDate]
+    updateAllFixtures, [selectedDate]
   )
   
   return (
@@ -340,63 +408,113 @@ const FootballMatchesScreen = () => {
           <Text style={styles.filtersTitle}>Filters</Text>
           
           <View style={styles.filterButtons}>
-        <TouchableOpacity
-          style={[styles.filterButton, styles.activeFilterButton]}
-          onPress={() => toggleFilter('All')}
-        >
-          <Text style={[styles.filterButtonText, styles.activeFilterButtonText]}>
-            All
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => toggleFilter('Women')}
-        >
-          <Text style={styles.filterButtonText}>
-            Women
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setShowCompetitionModal(true)}
-        >
-          <Text style={styles.filterButtonText}>Competition ▼</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => toggleFilter('Live Chat')}
-        >
-          <Text style={styles.filterButtonText}>Live Chat</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+          styles.filterButton,
+          selectedFilters.includes('All') && styles.activeFilterButton
+              ]}
+              onPress={() => toggleFilter('All')}
+            >
+              <Text style={[
+          styles.filterButtonText,
+          selectedFilters.includes('All') && styles.activeFilterButtonText
+              ]}>
+          All
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+          styles.filterButton,
+          selectedFilters.includes('Women') && styles.activeFilterButton
+              ]}
+              onPress={() => toggleFilter('Women')}
+            >
+              <Text style={[
+          styles.filterButtonText,
+          selectedFilters.includes('Women') && styles.activeFilterButtonText
+              ]}>
+          Women
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.filterButton}
+              onPress={() => setShowCompetitionModal(true)}
+            >
+              <Text style={styles.filterButtonText}>Competition ▼</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+          styles.filterButton,
+          selectedFilters.includes('Live Chat') && styles.activeFilterButton
+              ]}
+              onPress={() => toggleFilter('Live Chat')}
+            >
+              <Text style={[
+          styles.filterButtonText,
+          selectedFilters.includes('Live Chat') && styles.activeFilterButtonText
+              ]}>
+          Live Chat
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Show selected filters as separate buttons */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 }}>
+            {selectedFilters
+              .filter(f => f !== 'All') // Optionally hide "All" from the selected list
+              .map(filter => (
+          <TouchableOpacity
+            key={filter}
+            style={[styles.filterButton, styles.activeFilterButton, { marginRight: 8, marginBottom: 8 }]}
+            onPress={() => toggleFilter(filter)}
+          >
+            <Text style={[styles.filterButtonText, styles.activeFilterButtonText]}>
+              {filter} ✕
+            </Text>
+          </TouchableOpacity>
+              ))}
           </View>
           
           <TouchableOpacity
-        style={styles.advancedFiltersButton}
-        onPress={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            style={styles.advancedFiltersButton}
+            onPress={() => setShowAdvancedFilters(!showAdvancedFilters)}
           >
-        <Text style={styles.advancedFiltersText}>Advanced Filters</Text>
-        <Text style={styles.advancedFiltersIcon}>
-          {showAdvancedFilters ? '▲' : '▼'}
-        </Text>
+            <Text style={styles.advancedFiltersText}>Advanced Filters</Text>
+            <Text style={styles.advancedFiltersIcon}>
+              {showAdvancedFilters ? '▲' : '▼'}
+            </Text>
           </TouchableOpacity>
         </View>
 
         {/* Matches List */}
-        <FlatList
-          data={
-        [...fixtures].sort((a, b) => {
-          // If time is null, treat as far future
+        {(() => {
+          // Group fixtures by competition
+          const grouped: { [competition: string]: Match[] } = {};
+          fixtures.forEach((fixture) => {
+        const comp = fixture.competition || 'Other';
+        if (!grouped[comp]) grouped[comp] = [];
+        grouped[comp].push(fixture);
+          });
+          // Get sorted competition names
+          const competitionNames = Object.keys(grouped).sort();
+          return competitionNames.map((comp) => (
+        <View key={comp}>
+            <Text style={{ fontWeight: '500', fontSize: 13, color: '#666', marginLeft: 20, marginTop: 20, marginBottom: 8 }}>{comp}</Text>
+          <FlatList
+            data={[...grouped[comp]].sort((a, b) => {
           const aTime = a.kickoffTime ? a.kickoffTime.getTime() : Number.MAX_SAFE_INTEGER;
           const bTime = b.kickoffTime ? b.kickoffTime.getTime() : Number.MAX_SAFE_INTEGER;
           return aTime - bTime;
-        })
-          }
-          renderItem={renderMatch}
-          keyExtractor={(item) => item.id.toString()}
-          scrollEnabled={false}
-        />
+            })}
+            renderItem={renderMatch}
+            keyExtractor={(item) => item.id.toString()}
+            scrollEnabled={false}
+          />
+        </View>
+          ));
+        })()}
       </ScrollView>
 
       {renderCompetitionModal()}
@@ -445,7 +563,7 @@ const styles = StyleSheet.create({
   },
     calendar: {
     backgroundColor: 'white',
-    paddingVertical: 20,
+    paddingVertical: 10,
     paddingHorizontal: 15,
   },
   calendarContainer: {
@@ -506,7 +624,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     margin: 15,
     padding: 20,
-    borderRadius: 12,
+    borderRadius: 5,
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
