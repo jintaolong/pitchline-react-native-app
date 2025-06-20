@@ -22,6 +22,7 @@ export type Match = {
   awayScore: number | null;
   status: string;
   competition: string;
+  competitionId: number;
   channel: string;
   viewers: string;
   kickoffTime: Date | null;

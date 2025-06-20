@@ -150,46 +150,52 @@ const FootballMatchesScreen = () => {
   const updateAllFixtures = () => {
     let matches: Match[] = [];
     log.debug(`Updating fixtures for date: ${selectedDate.toLocaleDateString()}`);
-    const deltaDay = Math.ceil((selectedDate.getTime() - today.getTime()) / 1000 / 1000 / 60 /60 / 24) + 1;
-    // const deltaDay = selectedDate - today
-    log.debug(deltaDay);
-    const matchListResponse = getMatchLit(deltaDay).then(
-      (data: FixtureResponse[]) => {
-        matches = data.map((fixture) => {
-          // const isMatchStarted = fixture.fixture.fixture.status < '
-          // const isMatchEnded = fixture.fixture.status.long === 'Match Finished';
-          const homeTeam = fixture.fixture.teams.home.name;
-          const awayTeam = fixture.fixture.teams.away.name;
-          const homeLogo = fixture.fixture.teams.home.logo ? fixture.fixture.teams.home.logo : '';
-          const awayLogo = fixture.fixture.teams.away.logo ? fixture.fixture.teams.away.logo : '';
-          const homeScore = fixture.fixture.goals.home ? fixture.fixture.goals.home : '';
-          const awayScore = fixture.fixture.goals.away ? fixture.fixture.goals.away : '';
-          const status = formatStatus(fixture.fixture.fixture.status, fixture.fixture.fixture.date);
-          const competition = fixture.fixture.league.name || 'Unknown Competition';
-          const channel = 'Sky Sports'; // Placeholder, replace with actual channel data if available
-          const viewers = '180,000'; // Placeholder, replace with actual viewers data if available
-          // TODO: Covert date to local time of user
-          const time = fixture.fixture.fixture.date ? new Date(fixture.fixture.fixture.date).toLocaleTimeString() : null;
+    // const deltaDay = Math.ceil((selectedDate.getTime() - today.getTime()) / 1000 / 1000 / 60 /60 / 24) + 1;
+    // // const deltaDay = selectedDate - today
+    // log.debug(deltaDay);
+    // Format selectedDate as "MMMM-MM-dd" (e.g., "June-06-10")
+    const year = selectedDate.getFullYear();
+    const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
+    const day = selectedDate.getDate().toString().padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
 
-          return {
-            id: fixture.fixture.fixture.id,
-            homeTeam: homeTeam,
-            awayTeam: awayTeam,
-            homeLogo: homeLogo,
-            awayLogo: awayLogo,
-            homeScore: homeScore,
-            awayScore: awayScore,
-            status: status,
-            competition: competition,
-            channel: channel,
-            viewers: viewers,
-            kickoffTime: fixture.fixture.fixture.date ? new Date(fixture.fixture.fixture.date) : null,
-            time: time,
-          } as Match;
-        });
-        setAllFixtures(matches);
+    getMatchLit(formattedDate).then(
+      (data: FixtureResponse[]) => {
+      matches = data.map((fixture) => {
+        const homeTeam = fixture.fixture.teams.home.name;
+        const awayTeam = fixture.fixture.teams.away.name;
+        const homeLogo = fixture.fixture.teams.home.logo ? fixture.fixture.teams.home.logo : '';
+        const awayLogo = fixture.fixture.teams.away.logo ? fixture.fixture.teams.away.logo : '';
+        const homeScore = fixture.fixture.goals.home ? fixture.fixture.goals.home : null;
+        const awayScore = fixture.fixture.goals.away ? fixture.fixture.goals.away : null;
+        // const status = formatStatus(fixture.fixture.fixture.status, fixture.fixture.fixture.date);
+        const status = fixture.fixture.fixture.status.short;
+        const competition = fixture.fixture.league.name || 'Unknown Competition';
+        const competitionId = fixture.fixture.league.id || 0; // Assuming league ID is available
+        const channel = 'Sky Sports'; // Placeholder, replace with actual channel data if available
+        const viewers = '180,000'; // Placeholder, replace with actual viewers data if available
+        const time = fixture.fixture.fixture.date ? new Date(fixture.fixture.fixture.date).toLocaleTimeString() : null;
+
+        return {
+        id: fixture.fixture.fixture.id,
+        homeTeam: homeTeam,
+        awayTeam: awayTeam,
+        homeLogo: homeLogo,
+        awayLogo: awayLogo,
+        homeScore: homeScore,
+        awayScore: awayScore,
+        status: status,
+        competition: competition,
+        competitionId: competitionId,
+        channel: channel,
+        viewers: viewers,
+        kickoffTime: fixture.fixture.fixture.date ? new Date(fixture.fixture.fixture.date) : null,
+        time: time,
+        } as Match;
+      });
+      setAllFixtures(matches);
       }
-  );
+    );
   }
   
   // const matches: Match[] = [
@@ -487,25 +493,28 @@ const FootballMatchesScreen = () => {
         {/* Matches List */}
         {(() => {
           // Group fixtures by competition
-          const grouped: { [competition: string]: Match[] } = {};
+          const grouped: { [competition: number]: Match[] } = {};
+          const competitionIdMap: { [key: number]: string } = {};
           fixtures.forEach((fixture) => {
-        const comp = fixture.competition || 'Other';
-        if (!grouped[comp]) grouped[comp] = [];
-        grouped[comp].push(fixture);
+            const comp = fixture.competitionId || 0;
+            if (!competitionIdMap[comp]) competitionIdMap[comp] = 'Other';
+            competitionIdMap[comp] = fixture.competition || 'Other';
+            if (!grouped[comp]) grouped[comp] = [];
+            grouped[comp].push(fixture);
           });
           // Get sorted competition names
-          const competitionNames = Object.keys(grouped).sort();
-          return competitionNames.map((comp) => (
-        <View key={comp}>
-            <Text style={{ fontWeight: '500', fontSize: 13, color: '#666', marginLeft: 20, marginTop: 20, marginBottom: 8 }}>{comp}</Text>
+            const competitionIds = Object.keys(grouped).map(Number).sort((a, b) => a - b);
+          return competitionIds.map((compId) => (
+        <View key={compId}>
+            <Text style={{ fontWeight: '500', fontSize: 13, color: '#666', marginLeft: 20, marginTop: 20, marginBottom: 8 }}>{competitionIdMap[compId]}</Text>
           <FlatList
-            data={[...grouped[comp]].sort((a, b) => {
+            data={[...grouped[compId]].sort((a, b) => {
           const aTime = a.kickoffTime ? a.kickoffTime.getTime() : Number.MAX_SAFE_INTEGER;
           const bTime = b.kickoffTime ? b.kickoffTime.getTime() : Number.MAX_SAFE_INTEGER;
           return aTime - bTime;
             })}
             renderItem={renderMatch}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item) => item.id ? item.id.toString() : Math.random().toString()}
             scrollEnabled={false}
           />
         </View>

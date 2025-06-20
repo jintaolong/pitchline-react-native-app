@@ -52,11 +52,11 @@ export default function MatchCard({ item }: Props): JSX.Element {
             </TouchableOpacity>
             <View style={styles.scoreContainer}>
               <Text style={styles.scoreText}>
-                {item.homeScore !== null ? item.homeScore : ''}
+                {item.homeScore !== null ? item.homeScore : item.status === 'NS' ? '' : '0'}
               </Text>
               <Text style={styles.scoreSeparator}>-</Text>
               <Text style={styles.scoreText}>
-                {item.awayScore !== null ? item.awayScore : ''}
+                {item.awayScore !== null ? item.awayScore : item.status === 'NS' ? '' : '0'}
               </Text>
             </View>
             <TouchableOpacity 
