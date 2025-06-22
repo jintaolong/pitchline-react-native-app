@@ -24,7 +24,9 @@ import log from '../utils/logger';
 import { LineupsResponseDto } from '../dtos/Lineups';
 import { getH2HResults } from '../services/teamService';
 import { FixtureResponseDto } from '../dtos/Fixtures';
-import { Fixture, Team } from '../models/Fixtures';
+import { Fixture, Team, Venue } from '../models/Fixtures';
+import { MatchDto, ResultsDto } from '../dtos/Results';
+import { H2HResults } from '../models/Results';
 
 type PreMatchDetailsScreenRouteProp = RouteProp<{ params: { fixtureId: number } }, 'params'>;
 
@@ -52,7 +54,10 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
     league: '',
     kickoffDate: '',
     kickoffTime: '',
-    venue: '',
+    venue: {
+      name: '',
+      city: ''
+    } as Venue,
     homeTeam: {
       name: 'Home',
       teamId: 0,
@@ -69,7 +74,7 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
     getFixture(fixtureId).then((data: FixtureResponseDto | null) => {
       if (!!data){
         log.debug(`Got fixture with id ${fixtureId} as following`);
-        log.debug(data);
+        // log.debug(data);
         // Format date string like "2025-06-22T01:00:00+00:00" to "Sat 17 May 2025"
         const kickoffDateObj = new Date(data.fixture.fixture.date);
         setFixture({
@@ -83,9 +88,12 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
           kickoffTime: kickoffDateObj.toLocaleTimeString('en-GB', {
             hour: '2-digit', 
             minute: '2-digit', 
-            hour12: false 
+            hour12: true
           }),
-          venue: "TODO: add venue!",
+          venue: {
+            name: data.fixture.fixture.venue.name,
+            city: data.fixture.fixture.venue.city,
+          } as Venue,
           homeTeam: {
             name: data.fixture.teams.home.name,
             teamId: data.fixture.teams.home.id,
@@ -121,8 +129,8 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
           } as LineupPlayer));
           setHomeLineup(home);
           setAwayLineup(away);
-          console.log('Home Lineup:', homeLineup);
-          console.log('Away Lineup:', awayLineup);
+          // console.log('Home Lineup:', homeLineup);
+          // console.log('Away Lineup:', awayLineup);
         }else{
           console.error('Unexpected number of lineups:', data.lineups.length);
         }
@@ -133,6 +141,28 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
     });
   }, [fixtureId]);
 
+  let h2hResults : H2HResults[] = [];
+
+  getH2HResults(fixture.homeTeam.teamId, fixture.awayTeam.teamId).then(
+    (data: ResultsDto | null) => {
+      if (!!data){
+        h2hResults = data?.matches.map((result: MatchDto) => {
+          return {
+            fixtureId: result.fixture.id,
+            leagueShort: result.league.name,
+            homeScore: result.goals.home,
+            awayScore: result.goals.away,
+            winDrawLose:
+              result.goals.home > result.goals.away
+                ? "W"
+                : result.goals.home < result.goals.away
+                ? "L"
+                : "D",
+          } as H2HResults
+        });
+      }
+    }
+  );
   // React.useEffect(() => {
   //   getH2HResults()
   // }, [fixtureId])
@@ -196,8 +226,13 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
               </View>
               
               <View style={styles.timeSection}>
-                <Text style={styles.matchTime}>{fixture.kickoffTime}</Text>
-                <Text style={styles.venue}>{fixture.venue}</Text>
+                <Text style={styles.matchTime}>{fixture.kickoffTime.toLocaleUpperCase()}</Text>
+                <Text style={styles.venue}>
+                  {fixture.venue && typeof fixture.venue === 'object' && fixture.venue.name}
+                </Text>
+                <Text style={styles.venue}>
+                  {fixture.venue && typeof fixture.venue === 'object' && fixture.venue.city}
+                </Text>
               </View>
               
               <View style={styles.teamSection}>
@@ -444,7 +479,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   matchTime: {
-    fontSize: 24,
+    fontSize: 18,
+    letterSpacing: 1,
     fontWeight: 'bold',
     color: '#1F2937',
     marginBottom: 4,
