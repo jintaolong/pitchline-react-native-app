@@ -13,9 +13,9 @@ import {
   FlatList,
 } from 'react-native';
 import MatchCard from '../components/MatchCard';
-import { Match } from '../dtos/Matches';
+import { Match } from '../models/Matches';
 import { getMatchLit } from '../services/matchService';
-import { FixtureResponse, Status } from '../dtos/Fixtures';
+import { FixtureResponseDto, StatusDto } from '../dtos/Fixtures';
 import log from '../utils/logger';
 
 
@@ -41,7 +41,7 @@ const getWeekDates = (selectedDate: Date = new Date()) => {
 }
 
 
-const formatStatus = (status: Status, fixtureStartDate: string) : string => {
+const formatStatus = (status: StatusDto, fixtureStartDate: string) : string => {
   let out = ""
   const startDate = new Date(fixtureStartDate);
   const today = new Date();
@@ -160,7 +160,7 @@ const FootballMatchesScreen = () => {
     const formattedDate = `${year}-${month}-${day}`;
 
     getMatchLit(formattedDate).then(
-      (data: FixtureResponse[]) => {
+      (data: FixtureResponseDto[]) => {
       matches = data.map((fixture) => {
         const homeTeam = fixture.fixture.teams.home.name;
         const awayTeam = fixture.fixture.teams.away.name;
@@ -198,81 +198,10 @@ const FootballMatchesScreen = () => {
     );
   }
   
-  // const matches: Match[] = [
-  //   {
-  //     id: 1,
-  //     homeTeam: 'West Ham Utd',
-  //     awayTeam: 'Walsall',
-  //     homeScore: 0,
-  //     awayScore: 1,
-  //     status: 'End',
-  //     competition: 'Premier League',
-  //     channel: 'Sky Sports',
-  //     viewers: '180,000',
-  //     time: null,
-  //   },
-  //   {
-  //     id: 2,
-  //     homeTeam: 'Manchester Utd',
-  //     awayTeam: 'Arsenal',
-  //     homeScore: 2,
-  //     awayScore: 1,
-  //     status: 'LIVE',
-  //     competition: 'Premier League',
-  //     channel: 'Sky Sports',
-  //     viewers: '450,000',
-  //     time: null,
-  //   },
-  //   {
-  //     id: 3,
-  //     homeTeam: 'Real Madrid',
-  //     awayTeam: 'Barcelona',
-  //     homeScore: null,
-  //     awayScore: null,
-  //     status: 'Today 19:45',
-  //     competition: 'La Liga',
-  //     channel: 'ITV Sport',
-  //     viewers: '600,000',
-  //     time: 'Today 19:45',
-  //   },
-  //   {
-  //     id: 4,
-  //     homeTeam: 'Bayern Munich',
-  //     awayTeam: 'Borussia Dortmund',
-  //     homeScore: null,
-  //     awayScore: null,
-  //     status: 'Today 20:00',
-  //     competition: 'Bundesliga',
-  //     channel: 'BT Sport',
-  //     viewers: '350,000',
-  //     time: 'Today 20:00',
-  //   },
-  //   {
-  //     id: 5,
-  //     homeTeam: 'Juventus',
-  //     awayTeam: 'Inter Milan',
-  //     homeScore: null,
-  //     awayScore: null,
-  //     status: 'Tomorrow 15:00',
-  //     competition: 'Serie A',
-  //     channel: 'ESPN',
-  //     viewers: '300,000',
-  //     time: 'Tomorrow 15:00',
-  //   },
-  //   {
-  //     id: 6,
-  //     homeTeam: 'PSG',
-  //     awayTeam: 'Marseille',
-  //     homeScore: null,
-  //     awayScore: null,
-  //     status: 'Tomorrow 17:00',
-  //     competition: 'Ligue 1',
-  //     channel: 'beIN Sports',
-  //     viewers: '250,000',
-  //     time: 'Tomorrow 17:00',
-  //   },
-  // ];
-
+  useEffect(
+    updateAllFixtures, [selectedDate]
+  )
+  
   const filteredCompetitions = competitions.filter(comp =>
     comp.toLowerCase().includes(searchText.toLowerCase())
   );
@@ -296,7 +225,7 @@ const FootballMatchesScreen = () => {
     <TouchableOpacity
       style={[
         styles.dateButton,
-        selectedDate.getDate() === item.getDate() && styles.selectedDateButton
+        selectedDate.toDateString() === item.toDateString() && styles.selectedDateButton
       ]}
       onPress={() => setSelectedDate(item)}
     >
@@ -362,10 +291,6 @@ const FootballMatchesScreen = () => {
     </Modal>
   );
 
-  useEffect(
-    updateAllFixtures, [selectedDate]
-  )
-  
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -380,7 +305,20 @@ const FootballMatchesScreen = () => {
         </View>
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        onScroll={({ nativeEvent }) => {
+          if (nativeEvent.contentOffset.y <= 0) {
+        // At the top of the scroll view
+        // Trigger your function here
+        console.log('Scrolled to top');
+        updateAllFixtures();
+        // Example: call a function
+        // handleScrollTop();
+          }
+        }}
+        scrollEventThrottle={16}
+      >
         {/* Calendar */}
         <View style={styles.calendar}>
           <FlatList

@@ -1,7 +1,7 @@
 import React, { JSX } from 'react';
 import { View, Text, FlatList, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import TabNavigator from '../navigation/TabNavigator';
-import { Match } from '../dtos/Matches';
+import { Match } from '../models/Matches';
 import MatchCard from '../components/MatchCard';
 
 export default function HomeScreen(): JSX.Element {

@@ -3,9 +3,9 @@ export type RootStackParamList = {
   Register: undefined; // Registration screen
   Login: undefined; // Login screen
   Main: undefined;
-  Prematch: undefined; // Pre-match details screen
-  Postmatch: undefined; // Post-match details screen
-  Inplay: undefined; // In-play details screen
+  Prematch: {fixtureId: number}; // Pre-match details screen
+  Postmatch:  {fixtureId: number}; // Post-match details screen
+  Inplay:  {fixtureId: number}; // In-play details screen
   TeamDetails: undefined;
   PlayerDetails: undefined;
 };

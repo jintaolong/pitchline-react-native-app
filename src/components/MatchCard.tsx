@@ -1,8 +1,9 @@
 import React, { JSX } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Match } from '../dtos/Matches';
+import { Match } from '../models/Matches';
 import { useNavigation } from '@react-navigation/native';
+import log from '../utils/logger';
 
 interface Props {
   // match: MatchData;
@@ -12,10 +13,20 @@ interface Props {
 export default function MatchCard({ item }: Props): JSX.Element {
   const navigation = useNavigation();
   const onPressNavigateRoute = item.status === 'End' ? 'Postmatch' : item.status === 'LIVE' ? 'Inplay' : 'Prematch';
-
+  const fixtureId = item.id;
+  // log.debug(`MatchCard rendered for item with ID: ${fixtureId}, status: ${item.status}`);
   return (
     <TouchableOpacity 
-      onPress={() => navigation.navigate(onPressNavigateRoute)}
+      onPress={() => {
+        log.debug(`MatchCard pressed for item`);
+        log.debug(`Navigating to ${onPressNavigateRoute} with fixture ID: ${item.id}`);
+        navigation.navigate(
+          //onPressNavigateRoute, 
+          'Prematch',
+          {fixtureId: item.id} 
+        )
+      }
+    }
     >
       <View style={styles.matchCard}>
         {/* <View style={styles.matchHeader}>

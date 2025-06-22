@@ -1,33 +1,33 @@
-export interface Periods {
+export interface PeriodsDto {
   first: number | null;
   second: number | null;
 }
 
-export interface Venue {
+export interface VenueDto {
   id: number;
   name: string;
   city: string;
 }
 
-export interface Status {
+export interface StatusDto {
   long: string;
   short: string;
   elapsed: number | null;
   extra: number | null;
 }
 
-export interface FixtureDetails {
+export interface FixtureDetailsDto {
   id: number;
   referee: string | null;
   timezone: string;
   date: string;
   timestamp: number;
-  periods: Periods;
-  venue: Venue;
-  status: Status;
+  periods: PeriodsDto;
+  venue: VenueDto;
+  status: StatusDto;
 }
 
-export interface League {
+export interface LeagueDto {
   id: number;
   name: string;
   country: string;
@@ -38,46 +38,46 @@ export interface League {
   standings: boolean;
 }
 
-export interface Team {
+export interface TeamDto {
   id: number;
   name: string;
   logo: string;
   winner: boolean | null;
 }
 
-export interface Teams {
-  home: Team;
-  away: Team;
+export interface TeamsDto {
+  home: TeamDto;
+  away: TeamDto;
 }
 
-export interface Goals {
+export interface GoalsDto {
   home: number | null;
   away: number | null;
 }
 
-export interface ScoreTime {
+export interface ScoreTimeDto {
   home: number | null;
   away: number | null;
 }
 
-export interface Score {
-  halftime: ScoreTime;
-  fulltime: ScoreTime;
-  extratime: ScoreTime;
-  penalty: ScoreTime;
+export interface ScoreDto {
+  halftime: ScoreTimeDto;
+  fulltime: ScoreTimeDto;
+  extratime: ScoreTimeDto;
+  penalty: ScoreTimeDto;
 }
 
-export interface Fixture {
-  fixture: FixtureDetails;
-  league: League;
-  teams: Teams;
-  goals: Goals;
-  score: Score;
+export interface FixtureDto {
+  fixture: FixtureDetailsDto;
+  league: LeagueDto;
+  teams: TeamsDto;
+  goals: GoalsDto;
+  score: ScoreDto;
 }
 
-export interface FixtureResponse {
+export interface FixtureResponseDto {
   _id: string;
   league_id: number;
   season: number;
-  fixture: Fixture;
+  fixture: FixtureDto;
 }

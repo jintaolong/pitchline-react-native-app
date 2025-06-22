@@ -1,3 +1,4 @@
+import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -12,7 +13,19 @@ import {
 
 const { width } = Dimensions.get('window');
 
-const PostMatchScreen = () => {
+type PostMatchScreenRouteProp = {
+  params: {
+    fixtureId: string;
+  };
+};
+
+type PostMatchScreenProps = {
+  route: PostMatchScreenRouteProp;
+};
+
+const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
+  const navigation = useNavigation();
+  const { fixtureId } = route.params; // Get fixtureId from route params
   const [activeTab, setActiveTab] = useState('Live');
 
   const matchEvents = [

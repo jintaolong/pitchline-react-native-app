@@ -8,15 +8,31 @@ import {
   ScrollView,
   StatusBar,
   Dimensions,
+  Image
 } from 'react-native';
 import PitchlinePieChart from '../components/PieChart';
 import PitchlineComparisonBarChart from '../components/ComparisonBarChart';
 import WDLBarChart from '../components/WDLBarChart';
 import Slider from '@react-native-community/slider';
+import { getFixture, getMatchLineups } from '../services/matchService';
+import { LineupPlayer } from '../models/Lineups';
 
 const { width } = Dimensions.get('window');
 
-const PreMatchDetailsScreen = () => {
+import { RouteProp, useNavigation } from '@react-navigation/native';
+import log from '../utils/logger';
+import { LineupsResponseDto } from '../dtos/Lineups';
+import { getH2HResults } from '../services/teamService';
+import { FixtureResponseDto } from '../dtos/Fixtures';
+import { Fixture, Team } from '../models/Fixtures';
+
+type PreMatchDetailsScreenRouteProp = RouteProp<{ params: { fixtureId: number } }, 'params'>;
+
+const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRouteProp }) => {
+  const navigation = useNavigation();
+  const {fixtureId} = route.params;
+  log.debug(`PreMatchDetailsScreen: fixtureId=${fixtureId}`);
+
   const summaryOptions = [
     { label: '1 Month', value: 1 },
     { label: '3 Months', value: 3 },
@@ -28,35 +44,99 @@ const PreMatchDetailsScreen = () => {
   ];
 
   const [summaryWindow, setSummaryWindow] = useState(3); // Default: last 3 months
+  const [homeLineup, setHomeLineup] = useState<LineupPlayer[]>([]);
+  const [awayLineup, setAwayLineup] = useState<LineupPlayer[]>([]);
+  // const homeLineup : LineupPlayer[] = [];
+  // const awayLineup: LineupPlayer[] = [];
+  const [fixture, setFixture] = useState<Fixture>({
+    league: '',
+    kickoffDate: '',
+    kickoffTime: '',
+    venue: '',
+    homeTeam: {
+      name: 'Home',
+      teamId: 0,
+      logoUrl: '',
+    } as Team,
+    awayTeam: {
+      name: 'Away',
+      teamId: 0,
+      logoUrl: '',
+    } as Team
+  });
 
-  const manchesterLineup = [
-    { number: 24, name: "André Onana" },
-    { number: 15, name: "Leny Yoro" },
-    { number: 5, name: "Harry Maguire" },
-    { number: 23, name: "Luke Shaw" },
-    { number: 3, name: "Noussair Mazraoui" },
-    { number: 18, name: "Casemiro" },
-    { number: 8, name: "Bruno Fernandes" },
-    { number: 13, name: "Patrick Dorgu" },
-    { number: 37, name: "Kobbie Mainoo" },
-    { number: 17, name: "Alejandro Garnacho" },
-    { number: 9, name: "Rasmus Højlund" }
-  ];
+  React.useEffect(() => {
+    getFixture(fixtureId).then((data: FixtureResponseDto | null) => {
+      if (!!data){
+        log.debug(`Got fixture with id ${fixtureId} as following`);
+        log.debug(data);
+        // Format date string like "2025-06-22T01:00:00+00:00" to "Sat 17 May 2025"
+        const kickoffDateObj = new Date(data.fixture.fixture.date);
+        setFixture({
+          league: data.fixture.league.name,
+          kickoffDate: kickoffDateObj.toLocaleDateString('en-GB', {
+            weekday: 'short',
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          }).replace(/,/g, ''),
+          kickoffTime: kickoffDateObj.toLocaleTimeString('en-GB', {
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: false 
+          }),
+          venue: "TODO: add venue!",
+          homeTeam: {
+            name: data.fixture.teams.home.name,
+            teamId: data.fixture.teams.home.id,
+            logoUrl: data.fixture.teams.home.logo
+          } as Team,
+          awayTeam: {
+            name: data.fixture.teams.away.name,
+            teamId: data.fixture.teams.away.id,
+            logoUrl: data.fixture.teams.away.logo
+          } as Team,
+        } as Fixture
+      );
+      }
+    })
+  }, [fixtureId]);
 
-  const arsenalLineup = [
-    { number: 22, name: "David Raya" },
-    { number: 4, name: "Ben White" },
-    { number: 2, name: "William Saliba" },
-    { number: 15, name: "Jakub Kiwior" },
-    { number: 41, name: "Myles Lewis-Skelly" },
-    { number: 5, name: "Thomas Partey" },
-    { number: 41, name: "Declan Rice" },
-    { number: 8, name: "Martin Ødegaard" },
-    { number: 7, name: "Bukayo Saka" },
-    { number: 19, name: "Leandro Trossard" },
-    { number: 11, name: "Gabriel Martinelli" }
-  ];
+  React.useEffect(() => {
+    getMatchLineups(fixtureId).then((data: LineupsResponseDto | null) => {
+      // Process the data if needed
+      console.log('Match lineups:', data);  
+      if (!!data) {
+        // You can update state or perform actions with the data here
+        // For example, you might want to set the lineups in state
+        // setLineups(data.lineups);
+        if (data.lineups.length == 2){
+          const home = data.lineups[0].startXI.map(player => ({
+            number: player.player.number,
+            name: player.player.name
+          } as LineupPlayer));
+          const away = data.lineups[1].startXI.map(player => ({
+            number: player.player.number,
+            name: player.player.name
+          } as LineupPlayer));
+          setHomeLineup(home);
+          setAwayLineup(away);
+          console.log('Home Lineup:', homeLineup);
+          console.log('Away Lineup:', awayLineup);
+        }else{
+          console.error('Unexpected number of lineups:', data.lineups.length);
+        }
+        // homeLineup = data.lineups.find(lineup => lineup.team.name === "Manchester Utd")?.startXI || [];
+      } else {
+        console.error('Failed to fetch match lineups');
+      }
+    });
+  }, [fixtureId]);
 
+  // React.useEffect(() => {
+  //   getH2HResults()
+  // }, [fixtureId])
+  
   const recentForm = [
     { result: 'W', color: '#10B981' },
     { result: 'L', color: '#EF4444' },
@@ -93,31 +173,45 @@ const PreMatchDetailsScreen = () => {
             <TouchableOpacity style={styles.backButton}>
               <Text style={styles.backArrow}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Premier League</Text>
+            <Text style={styles.headerTitle}>{fixture.league}</Text>
             <View style={styles.headerSpacer} />
           </View>
 
           {/* Match Info */}
           <View style={styles.matchInfo}>
-            <Text style={styles.matchDate}>Sat 17 May 2025</Text>
+            <Text style={styles.matchDate}>{fixture.kickoffDate}</Text>
             <View style={styles.teamsContainer}>
               <View style={styles.teamSection}>
                 <View style={styles.teamLogo}>
-                  <Text style={styles.logoText}>MU</Text>
+                  {fixture.homeTeam.logoUrl ? (
+                    <Image
+                      source={{ uri: fixture.homeTeam.logoUrl }}
+                      style={{ width: 32, height: 32, resizeMode: 'contain' }}
+                    />
+                  ) : (
+                    <Text style={styles.logoText}>{fixture.homeTeam.short}</Text>
+                  )}
                 </View>
-                <Text style={styles.teamName}>Manchester Utd</Text>
+                <Text style={styles.teamName}>{fixture.homeTeam.name}</Text>
               </View>
               
               <View style={styles.timeSection}>
-                <Text style={styles.matchTime}>19:45</Text>
-                <Text style={styles.venue}>Old Trafford, Manchester</Text>
+                <Text style={styles.matchTime}>{fixture.kickoffTime}</Text>
+                <Text style={styles.venue}>{fixture.venue}</Text>
               </View>
               
               <View style={styles.teamSection}>
-                <View style={[styles.teamLogo, styles.arsenalLogo]}>
-                  <Text style={styles.logoText}>A</Text>
+                <View style={styles.teamLogo}>
+                  {fixture.awayTeam.logoUrl ? (
+                    <Image
+                      source={{ uri: fixture.awayTeam.logoUrl }}
+                      style={{ width: 32, height: 32, resizeMode: 'contain' }}
+                    />
+                  ) : (
+                    <Text style={styles.logoText}>{fixture.awayTeam.short}</Text>
+                  )}
                 </View>
-                <Text style={styles.teamName}>Arsenal</Text>
+                <Text style={styles.teamName}>{fixture.awayTeam.name}</Text>
               </View>
             </View>
           </View>
@@ -127,14 +221,14 @@ const PreMatchDetailsScreen = () => {
             <Text style={styles.sectionTitle}>Starting XI</Text>
             <View style={styles.lineupContainer}>
               <View style={styles.teamLineup}>
-                {manchesterLineup.map((player, index) => (
+                {homeLineup.map((player, index) => (
                   <Text key={index} style={styles.playerText}>
                     {player.number} {player.name}
                   </Text>
                 ))}
               </View>
               <View style={styles.teamLineup}>
-                {arsenalLineup.map((player, index) => (
+                {awayLineup.map((player, index) => (
                   <Text key={index} style={[styles.playerText, styles.rightAlign]}>
                     {player.name} {player.number}
                   </Text>
@@ -193,7 +287,7 @@ const PreMatchDetailsScreen = () => {
                 minimumTrackTintColor="transparent"
                 maximumTrackTintColor="transparent"
                 thumbTintColor="#6366F1"
-                trackStyle={{ height: 12, borderRadius: 6, backgroundColor: 'transparent' }}
+                // trackStyle={{ height: 12, borderRadius: 6, backgroundColor: 'transparent' }}
                 style={{ height: 24 }}
               />
             </View>
@@ -327,7 +421,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#DC2626',
+    // backgroundColor: '#DC2626',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,

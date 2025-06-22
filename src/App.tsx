@@ -28,24 +28,24 @@ export default function App() {
         <Stack.Navigator initialRouteName={isLoggedIn ? 'Main' : 'Launch'}>
             <Stack.Group>
               <Stack.Screen 
-                name="Main"
-                component={TabNavigator}
-                options={{ headerShown: false }}
+              name="Main"
+              component={TabNavigator}
+              options={{ headerShown: false }}
               />
               <Stack.Screen 
-                name="Prematch"
-                component={PreMatchDetailsScreen}
-                options={{ headerShown: false }}
+              name="Prematch"
+              component={PreMatchDetailsScreen}
+              options={{ headerShown: false }}
               />
               <Stack.Screen 
-                name="Postmatch"
-                component={PostMatchScreen}
-                options={{ headerShown: false }}
+              name="Postmatch"
+              component={PostMatchScreen}
+              options={{ headerShown: false }}
               />
               <Stack.Screen 
-                name="Inplay"
-                component={InPlayDetailsScreen}
-                options={{ headerShown: false }}
+              name="Inplay"
+              component={InPlayDetailsScreen}
+              options={{ headerShown: false }}
               />
             </Stack.Group>
             <Stack.Group>
