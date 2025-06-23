@@ -2,20 +2,36 @@ import { FC } from "react";
 import {
 } from 'react-native';
 import { View, Text, StyleSheet } from "react-native";
+import { H2HResults } from "../models/Results";
 
 type H2HStatsProps = {
-
+  result: H2HResults
 }
 
-const H2HStats: FC<H2HStatsProps> = () => {
+const H2HStats: FC<H2HStatsProps> = ({result}) => {
+    // const result = homeScore > awayScore ? 'W' : homeScore < awayScore ? 'L' : 'D';
     return (
-        <View key={index} style={[styles.formBox, { backgroundColor: form.color }]}>
-            <Text style={styles.formText}>{form.result}</Text>
-            <Text style={styles.formSubtext}>
-            {index === 0 ? '3-2' : index === 1 ? '1-2' : index === 2 ? '1-0' : index === 3 ? '0-0' : '1-1'}
-            </Text>
-            <Text style={styles.formLeague}>
-            {index < 3 ? 'PL' : index === 3 ? 'UCL' : 'PL'}
+        <View
+            key={
+          result.fixtureId && result.fixtureId !== 0
+              ? `${result.leagueShort}-${result.fixtureId}`
+              : `${result.leagueShort}-${Math.random().toString(36).substr(2, 9)}`
+            }
+            style={[
+          styles.formBox,
+          result.homeScore > result.awayScore
+              ? styles.recentFormWin
+              : result.homeScore < result.awayScore
+              ? styles.recentFormLose
+              : styles.recentFormDraw
+            ]}
+        >
+            <Text style={styles.formText}>{result.winDrawLose}</Text>
+            <Text style={styles.formSubtext}>{`${result.homeScore}-${result.awayScore}`}</Text>
+            <Text
+              style={[styles.formLeague, { fontSize: 10, opacity: 0.8 }]}
+            >
+              {result.leagueShort}
             </Text>
         </View>
     );
@@ -46,6 +62,15 @@ const styles = StyleSheet.create({
   formLeague: {
     color: '#FFFFFF',
     fontSize: 10,
+  },
+  recentFormWin: {
+    backgroundColor: '#10B981'
+  },
+  recentFormDraw: {
+    backgroundColor: '#F59E0B'
+  },
+  recentFormLose: {
+    backgroundColor: '#EF4444'
   },
 });
 

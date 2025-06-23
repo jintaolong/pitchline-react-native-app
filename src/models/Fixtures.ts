@@ -5,6 +5,12 @@ export interface Fixture{
     venue: Venue;
     homeTeam: Team;
     awayTeam: Team;
+    goals?: FixtureGoals;
+}
+
+export interface FixtureGoals{
+    home: number | null;
+    away: number | null;
 }
 
 export interface Venue{

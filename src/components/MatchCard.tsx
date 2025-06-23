@@ -12,7 +12,7 @@ interface Props {
 
 export default function MatchCard({ item }: Props): JSX.Element {
   const navigation = useNavigation();
-  const onPressNavigateRoute = item.status === 'End' ? 'Postmatch' : item.status === 'LIVE' ? 'Inplay' : 'Prematch';
+  const onPressNavigateRoute = item.status === 'FT' ? 'Postmatch' : item.status === 'NS' ? 'Prematch' : 'Inplay';
   const fixtureId = item.id;
   // log.debug(`MatchCard rendered for item with ID: ${fixtureId}, status: ${item.status}`);
   return (
@@ -21,8 +21,8 @@ export default function MatchCard({ item }: Props): JSX.Element {
         log.debug(`MatchCard pressed for item`);
         log.debug(`Navigating to ${onPressNavigateRoute} with fixture ID: ${item.id}`);
         navigation.navigate(
-          //onPressNavigateRoute, 
-          'Prematch',
+          onPressNavigateRoute, 
+          // 'Prematch',
           {fixtureId: item.id} 
         )
       }

@@ -2,6 +2,7 @@ import axios from "axios";
 import { FixtureResponseDto } from "../dtos/Fixtures";
 import log from "../utils/logger";
 import { LineupsResponseDto } from "../dtos/Lineups";
+import { EventsResponseDto } from "../dtos/Events";
 
 export const getMatchLit = async (searchDate: string): Promise<FixtureResponseDto[]> => {
   // 
@@ -92,6 +93,34 @@ export const getFixture = async (fixtureId: number): Promise<FixtureResponseDto 
       return response.data;
     } catch (error) {
       log.error("Failed to fetch lineups:", error);
+      return null;
+    }
+  }
+
+  export const getEvents = async (fixtureId: number): Promise<EventsResponseDto | null> => {
+    fixtureId = 100;
+    try {
+      log.debug(`Fetching events for fixture ID: ${fixtureId}`);
+      const response = await axios.get<EventsResponseDto>(
+        `https://plapi.mynetworkplace.com/events/${fixtureId}`,
+        {
+          headers: {
+            "Accept": "application/json"
+          }
+        }
+      );
+      log.debug(`Received response with status: ${response.status}`);
+      if (!response.status || response.status !== 200) {
+        if (response.status && response.status === 404) {
+          log.info(`No events info found for ${fixtureId}`);
+          return null;
+        }
+        log.error(`Error fetching events: ${response.statusText}`);
+        return null;
+      }
+      return response.data;
+    } catch (error) {
+      log.error("Failed to fetch events:", error);
       return null;
     }
   }

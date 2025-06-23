@@ -13,7 +13,7 @@ import {
 import PitchlinePieChart from '../components/PieChart';
 import PitchlineComparisonBarChart from '../components/ComparisonBarChart';
 import WDLBarChart from '../components/WDLBarChart';
-import Slider from '@react-native-community/slider';
+// import Slider from '@react-native-community/slider';
 import { getFixture, getMatchLineups } from '../services/matchService';
 import { LineupPlayer } from '../models/Lineups';
 
@@ -22,11 +22,16 @@ const { width } = Dimensions.get('window');
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import log from '../utils/logger';
 import { LineupsResponseDto } from '../dtos/Lineups';
-import { getH2HResults } from '../services/teamService';
+import { getH2HResults, getH2HStats } from '../services/teamService';
 import { FixtureResponseDto } from '../dtos/Fixtures';
 import { Fixture, Team, Venue } from '../models/Fixtures';
 import { MatchDto, ResultsDto } from '../dtos/Results';
 import { H2HResults } from '../models/Results';
+import H2HStats from '../components/H2HStats';
+import ValveSelector from '../components/ValveSelector';
+import { H2HStatsDto } from '../dtos/Stats';
+import { Stats } from '../models/Stats';
+import { fixtureDtoToFixture, lineUpDtoToLineupPlayer } from '../utils/mappers';
 
 type PreMatchDetailsScreenRouteProp = RouteProp<{ params: { fixtureId: number } }, 'params'>;
 
@@ -45,7 +50,7 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
     // { label: 'Last 10 Years', value: 120 },
   ];
 
-  const [summaryWindow, setSummaryWindow] = useState(3); // Default: last 3 months
+  // const [summaryWindow, setSummaryWindow] = useState(3); // Default: last 3 months
   const [homeLineup, setHomeLineup] = useState<LineupPlayer[]>([]);
   const [awayLineup, setAwayLineup] = useState<LineupPlayer[]>([]);
   // const homeLineup : LineupPlayer[] = [];
@@ -74,119 +79,164 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
     getFixture(fixtureId).then((data: FixtureResponseDto | null) => {
       if (!!data){
         log.debug(`Got fixture with id ${fixtureId} as following`);
-        // log.debug(data);
-        // Format date string like "2025-06-22T01:00:00+00:00" to "Sat 17 May 2025"
-        const kickoffDateObj = new Date(data.fixture.fixture.date);
-        setFixture({
-          league: data.fixture.league.name,
-          kickoffDate: kickoffDateObj.toLocaleDateString('en-GB', {
-            weekday: 'short',
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          }).replace(/,/g, ''),
-          kickoffTime: kickoffDateObj.toLocaleTimeString('en-GB', {
-            hour: '2-digit', 
-            minute: '2-digit', 
-            hour12: true
-          }),
-          venue: {
-            name: data.fixture.fixture.venue.name,
-            city: data.fixture.fixture.venue.city,
-          } as Venue,
-          homeTeam: {
-            name: data.fixture.teams.home.name,
-            teamId: data.fixture.teams.home.id,
-            logoUrl: data.fixture.teams.home.logo
-          } as Team,
-          awayTeam: {
-            name: data.fixture.teams.away.name,
-            teamId: data.fixture.teams.away.id,
-            logoUrl: data.fixture.teams.away.logo
-          } as Team,
-        } as Fixture
-      );
+        setFixture(fixtureDtoToFixture(data));
       }
     })
   }, [fixtureId]);
 
   React.useEffect(() => {
     getMatchLineups(fixtureId).then((data: LineupsResponseDto | null) => {
-      // Process the data if needed
       console.log('Match lineups:', data);  
       if (!!data) {
-        // You can update state or perform actions with the data here
-        // For example, you might want to set the lineups in state
-        // setLineups(data.lineups);
         if (data.lineups.length == 2){
-          const home = data.lineups[0].startXI.map(player => ({
-            number: player.player.number,
-            name: player.player.name
-          } as LineupPlayer));
-          const away = data.lineups[1].startXI.map(player => ({
-            number: player.player.number,
-            name: player.player.name
-          } as LineupPlayer));
+          const home = lineUpDtoToLineupPlayer(data.lineups[0]);
+          const away = lineUpDtoToLineupPlayer(data.lineups[1]);
           setHomeLineup(home);
           setAwayLineup(away);
-          // console.log('Home Lineup:', homeLineup);
-          // console.log('Away Lineup:', awayLineup);
         }else{
           console.error('Unexpected number of lineups:', data.lineups.length);
         }
-        // homeLineup = data.lineups.find(lineup => lineup.team.name === "Manchester Utd")?.startXI || [];
       } else {
         console.error('Failed to fetch match lineups');
       }
     });
   }, [fixtureId]);
 
-  let h2hResults : H2HResults[] = [];
+  const [h2hResults, setH2hResults] = useState<H2HResults[]>([]);
 
-  getH2HResults(fixture.homeTeam.teamId, fixture.awayTeam.teamId).then(
+  React.useEffect(() => {
+    getH2HResults(fixture.homeTeam.teamId, fixture.awayTeam.teamId).then(
     (data: ResultsDto | null) => {
       if (!!data){
-        h2hResults = data?.matches.map((result: MatchDto) => {
-          return {
-            fixtureId: result.fixture.id,
-            leagueShort: result.league.name,
-            homeScore: result.goals.home,
-            awayScore: result.goals.away,
-            winDrawLose:
-              result.goals.home > result.goals.away
-                ? "W"
-                : result.goals.home < result.goals.away
-                ? "L"
-                : "D",
-          } as H2HResults
-        });
+        setH2hResults(
+          data?.matches.map((result: MatchDto) => {
+            return {
+              fixtureId: result.fixture.id,
+              leagueShort: result.league.name,
+              homeScore: result.goals.home,
+              awayScore: result.goals.away,
+              winDrawLose:
+                result.goals.home > result.goals.away
+                  ? "W"
+                  : result.goals.home < result.goals.away
+                  ? "L"
+                  : "D",
+            } as H2HResults
+          })
+        );
       }
     }
   );
+  }, [fixtureId]);
+  
+  const [statsWindow, setStatsWindow] = useState(1);
+
+  const [stats, setStats] = useState<Stats>({
+    homeWin: 0,
+    homeDraw: 0,
+    homeLost: 0,
+    homeGoals: 0,
+    awayGoals: 0,
+    homeShots: 0,
+    awayShots: 0,
+  } as Stats);
+    // goalsScored: 0,
+    // goalsConceded: 0,
+    // shots: 0,
+    // shotsOnTarget: 0,
+    // shotsOffTarget: 0,
+    // corners: 0,
+    // fouls: 0,
+    // yellowCards: 0,
+    // redCards: 0,
+    // win: 0,
+    // draw: 0,
+    // loss: 0,
+  // } as Stats);
+  React.useEffect(() => {
+    log.debug(`Stats window selected to ${statsWindow}`);
+    getH2HStats(fixture.homeTeam.teamId, fixture.awayTeam.teamId, statsWindow).then((
+      data : H2HStatsDto[]
+    ) => {
+      if (data && data.length > 0) {
+        const summed = data.reduce((acc, curr) => {
+          return {
+            _id: acc._id,
+            season: acc.season,
+            team1_id: acc.team1_id,
+            team2_id: acc.team2_id,
+            team1_wins: acc.team1_wins + (curr.team1_wins || 0),
+            team2_wins: acc.team2_wins + (curr.team2_wins || 0),
+            team1_goals: acc.team1_goals + (curr.team1_goals || 0),
+            team2_goals: acc.team2_goals + (curr.team2_goals || 0),
+            home_matches: acc.home_matches + (curr.home_matches || 0),
+            draws: acc.draws + (curr.draws || 0),
+          } as H2HStatsDto;
+        }, {
+          _id: '',
+          season: 0,
+          team1_id: 0,
+          team2_id: 0,
+          home_matches: 0,
+          team1_goals: 0,
+          team2_goals: 0,
+          team1_wins: 0,
+          team2_wins: 0,
+          draws: 0,
+        });
+        log.debug(summed);
+        setStats({
+          homeWin: summed.team1_wins,
+          homeDraw: summed.draws,
+          homeLost: summed.team2_wins,
+          homeGoals: summed.team1_goals,
+          awayGoals: summed.team2_goals,
+          homeShots: 0,
+          awayShots: 0,
+        } as Stats);
+      }else{
+        setStats({
+          homeWin: 0,
+          homeDraw: 0,
+          homeLost: 0,
+          homeGoals: 0,
+          awayGoals: 0,
+          homeShots: 0,
+          awayShots: 0,
+        } as Stats);
+      }
+      // setStats(
+      //   data.reduce((aStat: H2HStatsDto, bStat: H2HStatsDto) => {
+
+      //   })
+      // );
+    })
+
+  }, [statsWindow])
   // React.useEffect(() => {
   //   getH2HResults()
   // }, [fixtureId])
   
-  const recentForm = [
-    { result: 'W', color: '#10B981' },
-    { result: 'L', color: '#EF4444' },
-    { result: 'W', color: '#10B981' },
-    { result: 'D', color: '#F59E0B' },
-    { result: 'D', color: '#F59E0B' }
-  ];
+  // const recentForm = [
+  //   { result: 'W', color: '#10B981' },
+  //   { result: 'L', color: '#EF4444' },
+  //   { result: 'W', color: '#10B981' },
+  //   { result: 'D', color: '#F59E0B' },
+  //   { result: 'D', color: '#F59E0B' }
+  // ];
 
-  const goalScored = [
-    {
-      key: "Man Utd",
-      value: 40,
-      svg: { fill: '#6366F1' },
-    },
-    {
-      key: "Arsenal",
-      value: 30,
-      svg: { fill: '#3B82F6' },
-    },
-  ]
+  // const goalScored = [
+  //   {
+  //     key: "Man Utd",
+  //     value: 40,
+  //     svg: { fill: '#6366F1' },
+  //   },
+  //   {
+  //     key: "Arsenal",
+  //     value: 30,
+  //     svg: { fill: '#3B82F6' },
+  //   },
+  // ]
 
   const getSummaryLabel = (value: number) => {
     const found = summaryOptions.find(opt => opt.value === value);
@@ -277,68 +327,75 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
             <Text style={styles.sectionTitle}>Stats</Text>
             
             {/* Recent Form */}
-            <View style={styles.formContainer}>
-              {recentForm.map((form, index) => (
-                <View key={index} style={[styles.formBox, { backgroundColor: form.color }]}>
-                  <Text style={styles.formText}>{form.result}</Text>
-                  <Text style={styles.formSubtext}>
-                    {index === 0 ? '3-2' : index === 1 ? '1-2' : index === 2 ? '1-0' : index === 3 ? '0-0' : '1-1'}
-                  </Text>
-                  <Text style={styles.formLeague}>
-                    {index < 3 ? 'PL' : index === 3 ? 'UCL' : 'PL'}
-                  </Text>
-                </View>
-              ))}
+            <Text style={styles.statsLabel}>Head-to-head</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
+              <View style={styles.formContainer}>
+              {h2hResults.length > 0 ? 
+                h2hResults.map((result: H2HResults) => (
+                  <H2HStats 
+                    result={result}
+                  />
+                )) :
+                (
+                  <Text style={{ color: '#9CA3AF', fontSize: 13, alignSelf: 'center' }}>Not found</Text>
+                )
+              }
             </View>
+            </ScrollView>
 
             {/* Summary Window */}
-            <View style={styles.summaryContainer}>
+            {/* <View style={styles.summaryContainer}>
               <Text style={styles.summaryLabel}>Summary window:</Text>
               <Text style={styles.summaryValue}>{getSummaryLabel(summaryWindow)}</Text>
+            </View> */}
+            <View>
+              <ValveSelector 
+                onChange={(newWindow: number) => {
+                  setStatsWindow(newWindow);
+                }}
+              />
             </View>
-            <View style={{ width: '100%', height: 24, justifyContent: 'center', marginBottom: 16 }}>
-              {/* Custom thick track */}
+            {/* <View style={{ width: '100%', height: 32, justifyContent: 'center', marginBottom: 16 }}>
               <View
               style={{
                 position: 'absolute',
                 left: 0,
                 right: 0,
-                height: 2,
-                borderRadius: 6,
+                height: 8,
+                borderRadius: 8,
                 backgroundColor: '#6366F1',
               }}
               />
               <Slider
-                minimumValue={summaryOptions[0].value}
-                maximumValue={summaryOptions[summaryOptions.length - 1].value}
-                step={1}
-                value={summaryWindow}
-                onValueChange={(val: number) => {
-                  const nearest = summaryOptions.reduce((prev, curr) =>
-                  Math.abs(curr.value - val) < Math.abs(prev.value - val) ? curr : prev
-                  );
-                  setSummaryWindow(nearest.value);
-                }}
-                minimumTrackTintColor="transparent"
-                maximumTrackTintColor="transparent"
-                thumbTintColor="#6366F1"
-                // trackStyle={{ height: 12, borderRadius: 6, backgroundColor: 'transparent' }}
-                style={{ height: 24 }}
+              minimumValue={summaryOptions[0].value}
+              maximumValue={summaryOptions[summaryOptions.length - 1].value}
+              step={1}
+              value={summaryWindow}
+              onValueChange={(val: number) => {
+                const nearest = summaryOptions.reduce((prev, curr) =>
+                Math.abs(curr.value - val) < Math.abs(prev.value - val) ? curr : prev
+                );
+                setSummaryWindow(nearest.value);
+              }}
+              minimumTrackTintColor="transparent"
+              maximumTrackTintColor="transparent"
+              thumbTintColor="#6366F1"
+              style={{width: 300, height: 40}}
               />
-            </View>
+            </View> */}
             
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+            {/* <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
               {summaryOptions.filter((opt) => {
                 return opt.value == 1 || opt.value == 12 || opt.value == 24;
               }).map(opt => (
                 <Text key={opt.value} style={{ fontSize: 10, color: '#6B7280' }}>{opt.label}</Text>
               ))}
-            </View>
+            </View> */}
 
             {/* Win/Draw/Loss */}
             <View style={styles.statsRow}>
               <Text style={styles.statsLabel}>Win/Draw/Loss</Text>
-              <WDLBarChart win={85} draw={53} loss={69} />
+              <WDLBarChart win={stats.homeWin} draw={stats.homeDraw} loss={stats.homeLost} />
             </View>
 
             {/* Goals Scored */}
@@ -346,7 +403,19 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
               <Text style={styles.statsLabel}>Goals scored</Text>
               <View style={styles.goalsContainer}>
                 <PitchlinePieChart
-                  data={goalScored} 
+                  data={[
+                    {
+                      key: fixture.homeTeam.name,
+                      value: stats.homeGoals,
+                      svg: { fill: '#6366F1' },
+                    },
+                    {
+                      key: fixture.awayTeam.name,
+                      value: stats.awayGoals,
+                      svg: { fill: '#3B82F6' },
+                    },
+                  ]
+                } 
                   radius={50}
                 />
               </View>
@@ -356,8 +425,8 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
             <View style={styles.statsRow}>
               <Text style={styles.statsLabel}>Goals conceded</Text>
               <PitchlineComparisonBarChart
-                a={33}
-                b={22}
+                a={stats.awayGoals}
+                b={stats.homeGoals}
               />
             </View>
 
@@ -365,8 +434,8 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
             <View style={styles.statsRow}>
               <Text style={styles.statsLabel}>Shots</Text>
               <PitchlineComparisonBarChart
-                a={234}
-                b={220}
+                a={stats.homeShots}
+                b={stats.awayShots}
               />
             </View>
           </View>
@@ -520,6 +589,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     marginBottom: 20,
+    alignSelf: 'center',
+    maxWidth: 60, // or use maxWidth: 320,
   },
   formBox: {
     padding: 8,

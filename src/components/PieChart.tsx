@@ -70,7 +70,14 @@ const PitchlinePieChart: React.FC<PitchlinePieChartProps> = ({ data }) => {
       <View style={styles.blockContainer}>
         <PieChart
           style={{ height: 100, width: 100 }}
-          data={data}
+          data={
+        data[0]?.value === 0 && data[1]?.value === 0
+          ? [
+          { ...data[0], value: 1 },
+          { ...data[1], value: 1 },
+            ]
+          : data
+          }
           spacing={0}
           outerRadius={'95%'}
         />

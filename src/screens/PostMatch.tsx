@@ -1,21 +1,32 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   View,
   Text,
+  Image,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
   StatusBar,
   Dimensions,
 } from 'react-native';
+import { getEvents, getFixture, getMatchLineups } from '../services/matchService';
+import { LineupPlayer } from '../models/Lineups';
+import { Fixture } from '../models/Fixtures';
+import { Stats, WordCloudEntry } from '../models/Stats';
+import { FixtureDto, FixtureResponseDto } from '../dtos/Fixtures';
+import log from '../utils/logger';
+import { fixtureDtoToFixture, lineUpDtoToLineupPlayer } from '../utils/mappers';
+import { LineupsResponseDto } from '../dtos/Lineups';
+import { EventDto, EventsResponseDto } from '../dtos/Events';
+import { MatchEvent } from '../models/Events';
 
 const { width } = Dimensions.get('window');
 
 type PostMatchScreenRouteProp = {
   params: {
-    fixtureId: string;
+    fixtureId: number;
   };
 };
 
@@ -28,43 +39,149 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
   const { fixtureId } = route.params; // Get fixtureId from route params
   const [activeTab, setActiveTab] = useState('Live');
 
-  const matchEvents = [
-    { time: "1'", event: "Kick-off", icon: "⚽", color: "#9CA3AF" },
-    { time: "12'", event: "Corner awarded (Home Team)", icon: "📐", color: "#3B82F6" },
-    { time: "28'", event: "Foul by Player X (Away Team)", icon: "⚠️", color: "#F59E0B" },
-    { time: "35'", event: "Yellow card (Home Team)", icon: "🟨", color: "#F59E0B" },
-    { time: "45'", event: "Goal! Scored by Player Y (Home Team)", icon: "⚽", color: "#10B981" },
-    { time: "46'", event: "Second half begins", icon: "▶️", color: "#9CA3AF" },
-    { time: "62'", event: "Substitution: Player A ON, Player B OFF (Home Team)", icon: "🔄", color: "#3B82F6" },
-    { time: "78'", event: "Offside decision (Away Team)", icon: "🚩", color: "#F59E0B" },
-    { time: "89'", event: "Red card (Away Team)", icon: "🟥", color: "#EF4444" },
-    { time: "90+5'", event: "Full-time", icon: "⏱️", color: "#9CA3AF" }
-  ];
+  const [fixture, setFixture] = useState<Fixture | null>(null);
+  const [homeLineup, setHomeLineup] = useState<LineupPlayer[]>([]);
+  const [awayLineup, setAwayLineup] = useState<LineupPlayer[]>([]);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
+  const [wordCloudWords, setWordCloudWords] = useState<WordCloudEntry[]>([]);
 
-  const manchesterLineup = [
-    "24 André Onana", "15 Leny Yoro", "5 Harry Maguire", "23 Luke Shaw",
-    "3 Noussair Mazraoui", "18 Casemiro", "8 Bruno Fernandes", "13 Patrick Dorgu",
-    "37 Kobbie Mainoo", "17 Alejandro Garnacho", "9 Rasmus Højlund"
-  ];
+  useEffect(() => {
+    getFixture(fixtureId).then((data: FixtureResponseDto | null) => {
+      log.debug(`Got data: ${data}`);
+      if (!!data){
+        setFixture(fixtureDtoToFixture(data));
+      }
+    });
+    getMatchLineups(fixtureId).then((data: LineupsResponseDto | null) => {
+      console.log('Match lineups:', data);  
+      if (!!data) {
+        if (data.lineups.length == 2){
+          const home = lineUpDtoToLineupPlayer(data.lineups[0]);
+          const away = lineUpDtoToLineupPlayer(data.lineups[1]);
+          setHomeLineup(home);
+          setAwayLineup(away);
+        }else{
+          console.error('Unexpected number of lineups:', data.lineups.length);
+        }
+      } else {
+        console.error('Failed to fetch match lineups');
+      }
+    });
+    // getPostMatchStats(fixtureId).then(setStats);
+    getEvents(fixtureId).then((data: EventsResponseDto | null) => {
+      if(!!data){
+        let events = data.events.map((event: EventDto) => {
+          return {
+            time: event.time.elapsed + (event.time.extra ? `+${event.time.extra}` : "") + "'",
+            event: event.detail ? `${event.detail}${event.player ? ` (${event.player.name})` : ""}` : event.type,
+            icon: event.type === "Goal" ? "⚽"
+              : event.type === "Card" && event.detail === "Yellow Card" ? "🟨"
+              : event.type === "Card" && event.detail === "Red Card" ? "🟥"
+              : event.type === "Substitution" ? "🔄"
+              : event.type === "Offside" ? "🚩"
+              : event.type === "VAR" ? "🖥️"
+              : event.type === "Corner" ? "📐"
+              : event.type === "Foul" ? "⚠️"
+              : "⏱️",
+            color: event.type === "Goal" ? "#10B981"
+              : event.type === "Card" && event.detail === "Yellow Card" ? "#F59E0B"
+              : event.type === "Card" && event.detail === "Red Card" ? "#EF4444"
+              : event.type === "Substitution" ? "#3B82F6"
+              : event.type === "Offside" ? "#F59E0B"
+              : event.type === "VAR" ? "#6366F1"
+              : event.type === "Corner" ? "#3B82F6"
+              : event.type === "Foul" ? "#F59E0B"
+              : "#9CA3AF"
+          } as MatchEvent
+        });
+        setMatchEvents(events);
+        // let wordCloud = data.events.map((event: EventDto) => {
+        // Aggregate word occurrences by player name and event type
+        const wordMap: { [key: string]: { count: number; color: string } } = {};
+        // Collect all words from type, detail, and player name into a bag
+        data.events.forEach((event: EventDto) => {
+          const bag: { word: string; color: string }[] = [];
+        // Helper to split and push words
+          const pushWords = (str: string | undefined, color: string) => {
+            if (!str) return;
+            str.split(/\s+/).forEach(word => {
+            const upper = word.toUpperCase();
+            // Skip if the word is purely numeric or looks like an initial (e.g., "J.")
+            if (
+              upper &&
+              !/^\d+$/.test(upper) &&
+              !/^[A-Z]\.$/.test(upper)
+            ) {
+              bag.push({ word: upper, color });
+            }
+            });
+          };
+          // Assign color based on event type
+          // Assign a color from a palette based on the word key (for more variety)
+          const colorPalette = [
+          "#10B981", // green
+          "#F59E0B", // yellow
+          "#EF4444", // red
+          "#3B82F6", // blue
+          "#6366F1", // indigo
+          "#8B5CF6", // violet
+          "#06B6D4", // cyan
+          "#EC4899", // pink
+          "#84CC16", // lime
+          "#F97316", // orange
+          ];
+          // Use the index of the key in the bag, mod 10, to pick a color
+          const key = (event.type || "") + (event.detail || "") + (event.player?.name || "");
+          let color = colorPalette[0];
+          // Find the index of the key in the bag so far
+          const bagIndex = bag.findIndex(({ word }) => word === key.toUpperCase());
+          if (bagIndex >= 0) {
+            color = colorPalette[bagIndex % colorPalette.length];
+          } else {
+            // fallback: hash as before if not found
+            let hash = 0;
+            for (let i = 0; i < key.length; i++) {
+            hash = (hash * 31 + key.charCodeAt(i)) % colorPalette.length;
+            }
+            color = colorPalette[Math.abs(hash)];
+          }
+          pushWords(event.type, color);
+          pushWords(event.detail, color);
+          if (event.player && event.player.name) {
+            pushWords(event.player.name, color);
+          }
+          // Count words in wordMap
+          bag.forEach(({ word, color }) => {
+            if (wordMap[word]) {
+              wordMap[word].count += 1;
+            } else {
+              wordMap[word] = { count: 1, color };
+            }
+          });
+        });
 
-  const arsenalLineup = [
-    "David Raya 22", "Ben White 4", "William Saliba 2", "Jakub Kiwior 15",
-    "Myles Lewis-Skelly 41", "Thomas Partey 5", "Declan Rice 41", "Martin Ødegaard 8",
-    "Bukayo Saka 7", "Leandro Trossard 19", "Gabriel Martinelli 11"
-  ];
+        // Convert to array and map count to font size
+        const minFont = 12, maxFont = 32;
+        const counts = Object.values(wordMap).map(w => w.count);
+        log.debug(counts);
+        const minCount = Math.min(...counts);
+        const maxCount = Math.max(...counts);
 
-  const wordCloudWords = [
-    { text: "HAALAND", size: 24, color: "#EF4444" },
-    { text: "SAKA", size: 20, color: "#F59E0B" },
-    { text: "GOAL", size: 28, color: "#10B981" },
-    { text: "BALL", size: 22, color: "#3B82F6" },
-    { text: "FOUL", size: 16, color: "#8B5CF6" },
-    { text: "PASS", size: 18, color: "#06B6D4" },
-    { text: "SHOT", size: 16, color: "#F97316" },
-    { text: "SAVE", size: 14, color: "#84CC16" },
-    { text: "CORNER", size: 14, color: "#EC4899" },
-    { text: "OFFSIDE", size: 12, color: "#6B7280" }
-  ];
+        const wordCloud: WordCloudEntry[] = Object.entries(wordMap).map(([text, { count, color }]) => {
+          // Linear scale for font size
+          let size = minFont;
+          if (maxCount !== minCount) {
+            size = minFont + ((count - minCount) / (maxCount - minCount)) * (maxFont - minFont);
+          }
+          return { text, size, color };
+        });
+
+        setWordCloudWords(wordCloud);
+        // })
+      }
+    });
+  }, [fixtureId]);
 
   return (
     <>
@@ -76,31 +193,54 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
             <TouchableOpacity style={styles.backButton}>
               <Text style={styles.backArrow}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Premier League</Text>
+            <Text style={styles.headerTitle}>{fixture?.league}</Text>
             <View style={styles.headerSpacer} />
           </View>
 
           {/* Match Result */}
           <View style={styles.matchResult}>
-            <Text style={styles.matchDate}>Sat 17 May 2025</Text>
+            <Text style={styles.matchDate}>{fixture?.kickoffDate}</Text>
             <View style={styles.scoreContainer}>
               <View style={styles.teamSection}>
                 <View style={styles.teamLogo}>
-                  <Text style={styles.logoText}>MU</Text>
+                  {fixture?.homeTeam.logoUrl ? (
+                    <Image
+                      source={{ uri: fixture.homeTeam.logoUrl }}
+                      style={{ width: 32, height: 32, resizeMode: 'contain' }}
+                    />
+                  ) : (
+                    <Text style={styles.logoText}>{fixture?.homeTeam.short}</Text>
+                  )}
                 </View>
-                <Text style={styles.teamName}>Manchester Utd</Text>
+                <Text style={styles.teamName}>{fixture?.homeTeam.name}</Text>
               </View>
               
               <View style={styles.scoreSection}>
-                <Text style={styles.finalScore}>2-1</Text>
-                <Text style={styles.venue}>Old Trafford, Manchester</Text>
+                <Text style={styles.finalScore}>
+                  {fixture?.goals?.home != null ? fixture.goals.home : 0}
+                  :
+                  {fixture?.goals?.away != null ? fixture.goals.away : 0}
+                </Text>
+                <Text style={styles.venue}>
+                  {fixture?.venue && typeof fixture.venue === 'object' && fixture.venue.name}
+                </Text>
+                <Text style={styles.venue}>
+                  {fixture?.venue && typeof fixture.venue === 'object' && fixture.venue.city}
+                </Text>
               </View>
               
               <View style={styles.teamSection}>
-                <View style={[styles.teamLogo, styles.arsenalLogo]}>
-                  <Text style={styles.logoText}>A</Text>
+                <View style={styles.teamLogo}>
+                  {fixture?.awayTeam.logoUrl ? (
+                    <Image
+                      source={{ uri: fixture.awayTeam.logoUrl }}
+                      style={{ width: 32, height: 32, resizeMode: 'contain' }}
+                    />
+                  ) : (
+                    <Text style={styles.logoText}>{fixture?.awayTeam.short}</Text>
+                  )}
                 </View>
-                <Text style={styles.teamName}>Arsenal</Text>
+                <Text style={styles.teamName}>{fixture?.awayTeam.name}</Text>
               </View>
             </View>
           </View>
@@ -209,13 +349,17 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
             <Text style={styles.sectionTitle}>Starting XI</Text>
             <View style={styles.lineupContainer}>
               <View style={styles.teamLineup}>
-                {manchesterLineup.map((player, index) => (
-                  <Text key={index} style={styles.playerText}>{player}</Text>
+                {homeLineup.map((player, index) => (
+                  <Text key={index} style={styles.playerText}>
+                    {player.number} {player.name}
+                  </Text>
                 ))}
               </View>
               <View style={styles.teamLineup}>
-                {arsenalLineup.map((player, index) => (
-                  <Text key={index} style={[styles.playerText, styles.rightAlign]}>{player}</Text>
+                {awayLineup.map((player, index) => (
+                  <Text key={index} style={[styles.playerText, styles.rightAlign]}>
+                    {player.name} {player.number}
+                  </Text>
                 ))}
               </View>
             </View>
@@ -335,6 +479,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1F2937',
     marginBottom: 4,
+    letterSpacing: 7
   },
   venue: {
     fontSize: 12,
