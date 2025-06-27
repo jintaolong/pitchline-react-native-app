@@ -3,6 +3,7 @@ import { FixtureResponseDto } from "../dtos/Fixtures";
 import log from "../utils/logger";
 import { LineupsResponseDto } from "../dtos/Lineups";
 import { EventsResponseDto } from "../dtos/Events";
+import { MatchStatDto } from "../dtos/Stats";
 
 export const getMatchLit = async (searchDate: string): Promise<FixtureResponseDto[]> => {
   // 
@@ -22,8 +23,9 @@ export const getMatchLit = async (searchDate: string): Promise<FixtureResponseDt
         log.error(`Error fetching match list: ${response.statusText}`);
         return [];
     }
-    const resp = response.data.map((item: any) => {
-        return item as FixtureResponseDto;
+    // TOOD: remove max 50 cap
+    const resp = response.data.slice(0, 50).map((item: any) => {
+      return item as FixtureResponseDto;
     });
     log.debug(`Successfully fetched ${resp.length} matches`);
     return resp;
@@ -121,6 +123,35 @@ export const getFixture = async (fixtureId: number): Promise<FixtureResponseDto 
       return response.data;
     } catch (error) {
       log.error("Failed to fetch events:", error);
+      return null;
+    }
+  }
+
+  export const getFixtureStats = async (fixtureId: number): Promise<MatchStatDto | null> => {
+    fixtureId = 1208372;
+    try {
+      log.debug(`Fetching stats for fixture ID: ${fixtureId}`);
+      const response = await axios.get<MatchStatDto>(
+        `https://plapi.mynetworkplace.com/fixture-stats/${fixtureId}`,
+        {
+          headers: {
+            "Accept": "application/json"
+          }
+        }
+      );
+      log.debug(`Received response with status: ${response.status}`);
+      if (!response.status || response.status !== 200) {
+        if (response.status && response.status === 404) {
+          log.info(`No stats info found for ${fixtureId}`);
+          return null;
+        }
+        log.error(`Error fetching stats: ${response.statusText}`);
+        return null;
+      }
+      // log.debug(response.data);
+      return response.data;
+    } catch (error) {
+      log.error("Failed to fetch stats:", error);
       return null;
     }
   }

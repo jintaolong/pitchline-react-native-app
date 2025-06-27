@@ -3,6 +3,9 @@ import {
 } from 'react-native';
 import { View, Text, StyleSheet } from "react-native";
 import { H2HResults } from "../models/Results";
+import { useNavigation } from '@react-navigation/native';
+import { TouchableOpacity } from 'react-native';
+import log from "../utils/logger";
 
 type H2HStatsProps = {
   result: H2HResults
@@ -10,7 +13,10 @@ type H2HStatsProps = {
 
 const H2HStats: FC<H2HStatsProps> = ({result}) => {
     // const result = homeScore > awayScore ? 'W' : homeScore < awayScore ? 'L' : 'D';
+    log.debug(`H2HStats rendered for result with fixtureId: ${result.fixtureId}, homeScore: ${result.homeScore}, awayScore: ${result.awayScore}`);
+    const navigation = useNavigation();
     return (
+      <TouchableOpacity onPress={() => navigation.navigate('Postmatch', { fixtureId: result.fixtureId })}>
         <View
             key={
           result.fixtureId && result.fixtureId !== 0
@@ -31,9 +37,13 @@ const H2HStats: FC<H2HStatsProps> = ({result}) => {
             <Text
               style={[styles.formLeague, { fontSize: 10, opacity: 0.8 }]}
             >
-              {result.leagueShort}
+                {result.leagueShort
+                .split(' ')
+                .map(word => word[0]?.toUpperCase() || '')
+                .join('')}
             </Text>
         </View>
+      </TouchableOpacity>
     );
 
 }

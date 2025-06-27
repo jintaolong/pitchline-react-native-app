@@ -6,11 +6,14 @@ const PRIMARY_COLOR = '#007AFF';
 const PRIMARY_BG = '#E6F0FF';
 
 const PERIOD_OPTIONS = [
-    { index: 0, label: '1M', value: '1 Month', valueInMonths: 1 },
-    { index: 1, label: '3M', value: '3 Months', valueInMonths: 3 },
-    { index: 2, label: '6M', value: '6 Months', valueInMonths: 6 },
-    { index: 3, label: '1Y', value: '1 Year', valueInMonths: 12 },
-    { index: 4, label: '2Y', value: '2 Years', valueInMonths: 24 },
+    // { index: 0, label: '1M', value: '1 Month', valueInMonths: 1 },
+    // { index: 1, label: '3M', value: '3 Months', valueInMonths: 3 },
+    // { index: 2, label: '6M', value: '6 Months', valueInMonths: 6 },
+    { index: 0, label: '1Y', value: '1 Year', valueInMonths: 12 },
+    { index: 1, label: '2Y', value: '2 Years', valueInMonths: 24 },
+    { index: 2, label: '3Y', value: '3 Years', valueInMonths: 36 },
+    { index: 3, label: '5Y', value: '5 Years', valueInMonths: 60 },
+    { index: 4, label: '10Y', value: '10 Years', valueInMonths: 120 },
 ];
 
 // Squeezed horizontally

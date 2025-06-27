@@ -10,3 +10,25 @@ export interface H2HStatsDto {
     team2_wins: number;
     draws: number;
 };
+
+export interface TeamDto {
+    id: number;
+    name: string;
+    logo: string;
+}
+
+export interface StatItemDto{
+    type: string;
+    value: string | number | null;
+}
+
+export interface TeamMatchStatDto{
+    team: TeamDto;
+    statistics: StatItemDto[];
+}
+
+export interface MatchStatDto {
+    _id: string;
+    fixture_id: number;
+    statistics: TeamMatchStatDto[];
+}

@@ -2,6 +2,8 @@ import axios from "axios";
 import { ResultsDto } from "../dtos/Results";
 import log from "../utils/logger";
 import { H2HStatsDto } from "../dtos/Stats";
+import { TeamDto } from "../dtos/Teams";
+
 
 export const getH2HResults = async (homeId: number, awayId: number): Promise<ResultsDto | null> => {
     log.debug(`Fetching H2H results for ${homeId} vs ${awayId}`);
@@ -54,5 +56,51 @@ export const getH2HStats = async (homeId: number, awayId: number, window: number
     } catch (error) {
         log.error(`Failed to get H2H stats:`, error);
         return [];
+    }
+};
+
+
+export const getTeamDetails = async (teamId: number): Promise<TeamDto | null> => {
+    log.debug(`Fetching details for team ${teamId}`);
+    try {
+        const response = await axios.get<TeamDto>(
+            `https://plapi.mynetworkplace.com/club/${teamId}`,
+            {
+                headers: {
+                    "Accept": "application/json"
+                }
+            }
+        );
+        if (response.status === 200 && response.data) {
+            return response.data;
+        }
+        log.debug(`No details found for team ${teamId}`);
+        return null;
+    } catch (error) {
+        log.error(`Failed to get team details:`, error);
+        return null;
+    }
+};
+
+
+export const getLeagueStanding = async (leagueId: number, season: number): Promise<any | null> => {
+    log.debug(`Fetching standing for league ${leagueId} in season ${season}`);
+    try {
+        const response = await axios.get<any>(
+            `https://plapi.mynetworkplace.com/league-standings/?league_id=${leagueId}&season=${season}`,
+            {
+                headers: {
+                    "Accept": "application/json"
+                }
+            }
+        );
+        if (response.status === 200 && response.data) {
+            return response.data;
+        }
+        log.debug(`No standing found for league ${leagueId} for season ${season}`);
+        return null;
+    } catch (error) {
+        log.error(`Failed to get team standing:`, error);
+        return null;
     }
 };

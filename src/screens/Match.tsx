@@ -28,11 +28,11 @@ const getWeekDates = (selectedDate: Date = new Date()) => {
 
   // Calculate the start date (2 weeks before this week's Monday)
   const startDate = new Date(startOfWeek);
-  startDate.setDate(startOfWeek.getDate() - 14);
+  startDate.setDate(startOfWeek.getDate() - 60);
 
   // Generate 5 weeks (2 before, current, 2 after) = 35 days
   const dates = [];
-  for (let i = 0; i < 35; i++) {
+  for (let i = 0; i < 120; i++) {
     const date = new Date(startDate);
     date.setDate(startDate.getDate() + i);
     dates.push(date);
@@ -162,8 +162,14 @@ const FootballMatchesScreen = () => {
     getMatchLit(formattedDate).then(
       (data: FixtureResponseDto[]) => {
       matches = data.map((fixture) => {
-        const homeTeam = fixture.fixture.teams.home.name;
-        const awayTeam = fixture.fixture.teams.away.name;
+        const homeTeam = {
+          id: fixture.fixture.teams.home.id,
+          name: fixture.fixture.teams.home.name
+        };
+        const awayTeam = {
+          id: fixture.fixture.teams.away.id,
+          name: fixture.fixture.teams.away.name
+        };
         const homeLogo = fixture.fixture.teams.home.logo ? fixture.fixture.teams.home.logo : '';
         const awayLogo = fixture.fixture.teams.away.logo ? fixture.fixture.teams.away.logo : '';
         const homeScore = fixture.fixture.goals.home ? fixture.fixture.goals.home : null;
@@ -405,15 +411,15 @@ const FootballMatchesScreen = () => {
             {selectedFilters
               .filter(f => f !== 'All') // Optionally hide "All" from the selected list
               .map(filter => (
-          <TouchableOpacity
+            <TouchableOpacity
             key={filter}
             style={[styles.filterButton, styles.activeFilterButton, { marginRight: 8, marginBottom: 8 }]}
             onPress={() => toggleFilter(filter)}
-          >
+            >
             <Text style={[styles.filterButtonText, styles.activeFilterButtonText]}>
               {filter} ✕
             </Text>
-          </TouchableOpacity>
+            </TouchableOpacity>
               ))}
           </View>
           
@@ -452,7 +458,7 @@ const FootballMatchesScreen = () => {
           return aTime - bTime;
             })}
             renderItem={renderMatch}
-            keyExtractor={(item) => item.id ? item.id.toString() : Math.random().toString()}
+            keyExtractor={(item, index) => `${item.competitionId || ''}-${item.id}-${index}`}
             scrollEnabled={false}
           />
         </View>

@@ -11,16 +11,19 @@ import {
   StatusBar,
   Dimensions,
 } from 'react-native';
-import { getEvents, getFixture, getMatchLineups } from '../services/matchService';
+import { getEvents, getFixture, getFixtureStats, getMatchLineups } from '../services/matchService';
 import { LineupPlayer } from '../models/Lineups';
 import { Fixture } from '../models/Fixtures';
-import { Stats, WordCloudEntry } from '../models/Stats';
+import { MatchStats, MatchStatsDetail, Stats, WordCloudEntry } from '../models/Stats';
 import { FixtureDto, FixtureResponseDto } from '../dtos/Fixtures';
 import log from '../utils/logger';
-import { fixtureDtoToFixture, lineUpDtoToLineupPlayer } from '../utils/mappers';
+import { fixtureDtoToFixture, lineUpDtoToLineupPlayer, teamMatchStatDtoToMatchStatsDetail } from '../utils/mappers';
 import { LineupsResponseDto } from '../dtos/Lineups';
 import { EventDto, EventsResponseDto } from '../dtos/Events';
 import { MatchEvent } from '../models/Events';
+import { MatchStatDto } from '../dtos/Stats';
+import PitchlineComparisonBarChart from '../components/ComparisonBarChart';
+import PitchlinePieChart from '../components/PieChart';
 
 const { width } = Dimensions.get('window');
 
@@ -34,6 +37,7 @@ type PostMatchScreenProps = {
   route: PostMatchScreenRouteProp;
 };
 
+
 const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
   const navigation = useNavigation();
   const { fixtureId } = route.params; // Get fixtureId from route params
@@ -42,7 +46,7 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
   const [fixture, setFixture] = useState<Fixture | null>(null);
   const [homeLineup, setHomeLineup] = useState<LineupPlayer[]>([]);
   const [awayLineup, setAwayLineup] = useState<LineupPlayer[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [stats, setStats] = useState<MatchStats | null>(null);
   const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
   const [wordCloudWords, setWordCloudWords] = useState<WordCloudEntry[]>([]);
 
@@ -164,7 +168,7 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
         // Convert to array and map count to font size
         const minFont = 12, maxFont = 32;
         const counts = Object.values(wordMap).map(w => w.count);
-        log.debug(counts);
+        // log.debug(counts);
         const minCount = Math.min(...counts);
         const maxCount = Math.max(...counts);
 
@@ -179,6 +183,17 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
 
         setWordCloudWords(wordCloud);
         // })
+      }
+    });
+
+    getFixtureStats(fixtureId).then((data: MatchStatDto | null) => {
+      if (!!data) {
+        setStats({
+          home: teamMatchStatDtoToMatchStatsDetail(data.statistics[0]),
+          away: teamMatchStatDtoToMatchStatsDetail(data.statistics[1]),
+        } as MatchStats);
+      } else {
+        log.error('Failed to fetch match stats');
       }
     });
   }, [fixtureId]);
@@ -252,45 +267,74 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
             {/* Possession */}
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>Possession</Text>
-              <View style={styles.possessionContainer}>
-                <View style={styles.possessionStat}>
-                  <View style={styles.possessionIndicator} />
-                  <Text style={styles.possessionTeam}>MAN</Text>
-                  <Text style={styles.possessionPercent}>75%</Text>
-                </View>
-                <View style={styles.possessionChart}>
-                  <View style={styles.possessionPie} />
-                </View>
-                <View style={styles.possessionStat}>
-                  <Text style={styles.possessionPercent}>25%</Text>
-                  <Text style={styles.possessionTeam}>ARS</Text>
-                  <View style={[styles.possessionIndicator, styles.arsenalIndicator]} />
-                </View>
-              </View>
+              <PitchlinePieChart
+                  data={[
+                    {
+                      key: fixture?.homeTeam.name || 'Home',
+                      value: stats?.home.ballPossession || 0,
+                      svg: { fill: '#6366F1' },
+                    },
+                    {
+                      key: fixture?.awayTeam.name || 'Away',
+                      value: stats?.away.ballPossession || 0,
+                      svg: { fill: '#3B82F6' },
+                    },
+                  ]}
+                radius={50}
+              />
             </View>
 
             {/* Shots on target */}
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>Shots on target</Text>
-              <View style={styles.comparisonBar}>
-                <Text style={styles.comparisonNumber}>33</Text>
-                <View style={styles.comparisonBarContainer}>
-                  <View style={[styles.comparisonBarFill, { width: '60%', backgroundColor: '#6366F1' }]} />
-                </View>
-                <Text style={styles.comparisonNumber}>22</Text>
-              </View>
+              <PitchlineComparisonBarChart
+                  a={stats?.home.shotsOnGoal || 0}
+                  b={stats?.away.shotsOnGoal || 0}
+              />
             </View>
 
             {/* Shots off target */}
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>Shots off target</Text>
-              <View style={styles.comparisonBar}>
-                <Text style={styles.comparisonNumber}>3</Text>
-                <View style={styles.comparisonBarContainer}>
-                  <View style={[styles.comparisonBarFill, { width: '50%', backgroundColor: '#6366F1' }]} />
-                </View>
-                <Text style={styles.comparisonNumber}>3</Text>
-              </View>
+              <PitchlineComparisonBarChart
+                  a={stats?.home.shotsOffGoal || 0}
+                  b={stats?.away.shotsOffGoal || 0}
+              />
+            </View>
+            {/* Total Shots */}
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Total shots</Text>
+              <PitchlineComparisonBarChart
+                a={stats?.home.totalShots || 0}
+                b={stats?.away.totalShots || 0}
+              />
+            </View>
+
+            {/* Corners */}
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Corners</Text>
+              <PitchlineComparisonBarChart
+                a={stats?.home.cornerKicks || 0}
+                b={stats?.away.cornerKicks || 0}
+              />
+            </View>
+
+            {/* Fouls */}
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Fouls</Text>
+              <PitchlineComparisonBarChart
+                a={stats?.home.fouls || 0}
+                b={stats?.away.fouls || 0}
+              />
+            </View>
+
+            {/* Cards */}
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Cards</Text>
+              <PitchlineComparisonBarChart
+                a={(stats?.home.yellowCards || 0) + (stats?.home.redCards || 0)}
+                b={(stats?.away.yellowCards || 0) + (stats?.away.redCards || 0)}
+              />
             </View>
           </View>
 
@@ -371,7 +415,7 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
             <View style={styles.standingsContainer}>
               <View style={styles.standingRow}>
                 <Text style={styles.position}>6</Text>
-                <View style={[styles.teamLogo, styles.arsenalLogo, styles.smallLogo]}>
+                <View style={[styles.teamLogo, styles.awayLogo, styles.smallLogo]}>
                   <Text style={styles.smallLogoText}>A</Text>
                 </View>
                 <Text style={styles.standingTeam}>Arsenal</Text>
@@ -452,12 +496,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#DC2626',
+    // backgroundColor: '#DC2626',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
   },
-  arsenalLogo: {
+  awayLogo: {
     backgroundColor: '#DC2626',
   },
   logoText: {
@@ -521,7 +565,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#6366F1',
   },
-  arsenalIndicator: {
+  awayIndicator: {
     backgroundColor: '#3B82F6',
   },
   possessionTeam: {

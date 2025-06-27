@@ -1,3 +1,5 @@
+import { Team } from "./Teams";
+
 export interface MatchData {
   id: number;
   homeTeam: string;
@@ -14,8 +16,8 @@ export interface MatchData {
 
 export type Match = {
   id: number;
-  homeTeam: string;
-  awayTeam: string;
+  homeTeam: Team;
+  awayTeam: Team;
   homeLogo?: string;
   awayLogo?: string;
   homeScore: number | null;

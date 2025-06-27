@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { RouteProp } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -10,11 +11,66 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
+import { getTeamDetails } from '../services/teamService';
+import { TeamDto } from '../dtos/Teams';
+import { LeagueStandingDto } from '../dtos/Leagues';
 
 const { width } = Dimensions.get('window');
 
-const TeamDetailsScreen = () => {
+type TeamDetailsScreenRouteProp = RouteProp<{ params: { teamId: number } }, 'params'>;
+
+const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
   const [activeLeague, setActiveLeague] = useState('Domestic League');
+  const {teamId} = route.params;
+  const [teamDetail, setTeamDetail] = useState<TeamDto>({
+    _id: 'dummy_id',
+    team_id: 1,
+    team_name: 'Dummy Team',
+    team: {
+      id: 1,
+      name: 'Dummy Team',
+      code: 'DT',
+      country: 'Nowhere',
+      founded: 1900,
+      national: false,
+      logo: '',
+    },
+    coach: {},
+    squad: [],
+    venue: {
+      id: 1,
+      name: 'Dummy Stadium',
+      address: '123 Dummy St',
+      city: 'Dummytown',
+      capacity: 10000,
+      surface: 'Grass',
+      image: '',
+    },
+  });
+  const [domesticLeagueStanding, setDomesticLeagueStanding] = useState<LeagueStandingDto>(
+    {
+      _id: "",
+      league_id: 0,
+      season: 0,
+      league: {
+        id: 0,
+        name: "",
+        country: "",
+        logo: "",
+        flag: "",
+        season: 0,
+        standings: [[]]
+      },
+      standings: [[]]
+    }
+  );
+  useEffect(() => {
+    getTeamDetails(teamId).then((data: TeamDto | null) => {
+      if(!!data){
+        setTeamDetail(data);
+      }
+    });
+  }, [teamId]);
 
   const formResults = [
     { result: 'W', competition: 'PL', color: '#10B981' },
@@ -33,14 +89,14 @@ const TeamDetailsScreen = () => {
     { position: 5, team: 'Tottenham', points: 23, form: ['L', 'L', 'W', 'W', 'W'] }
   ];
 
-  const squadMembers = [
-    { name: 'Kevin De Bruyne', position: 'Midfielder', hasPhoto: true },
-    { name: 'Erling Haaland', position: 'Forward', hasPhoto: true },
-    { name: 'Rodri', position: 'Midfielder', hasPhoto: true },
-    { name: 'Ruben Dias', position: 'Defender', hasPhoto: false },
-    { name: 'Ederson', position: 'Goalkeeper', hasPhoto: true },
-    { name: 'Bernardo Silva', position: 'Midfielder', hasPhoto: true }
-  ];
+  // const squadMembers = [
+  //   { name: 'Kevin De Bruyne', position: 'Midfielder', hasPhoto: true },
+  //   { name: 'Erling Haaland', position: 'Forward', hasPhoto: true },
+  //   { name: 'Rodri', position: 'Midfielder', hasPhoto: true },
+  //   { name: 'Ruben Dias', position: 'Defender', hasPhoto: false },
+  //   { name: 'Ederson', position: 'Goalkeeper', hasPhoto: true },
+  //   { name: 'Bernardo Silva', position: 'Midfielder', hasPhoto: true }
+  // ];
 
   const getFormColor = (result: string) => {
     switch (result) {
@@ -61,7 +117,7 @@ const TeamDetailsScreen = () => {
             <TouchableOpacity style={styles.backButton}>
               <Text style={styles.backArrow}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Club Details</Text>
+            <Text style={styles.headerTitle}>{teamDetail.team.name}</Text>
             <View style={styles.headerSpacer} />
           </View>
 
@@ -173,19 +229,24 @@ const TeamDetailsScreen = () => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Squad & Management</Text>
             <View style={styles.squadGrid}>
-              {squadMembers.map((player, index) => (
+              {teamDetail.squad.map((player, index) => (
                 <View key={index} style={styles.playerCard}>
                   <View style={styles.playerPhoto}>
-                    {player.hasPhoto ? (
+                    {!player.player.photo ? (
                       <View style={styles.photoPlaceholder}>
                         <Text style={styles.photoText}>👤</Text>
                       </View>
                     ) : (
-                      <View style={styles.noPhoto} />
+                      // <View style={styles.noPhoto} />
+                      <Image
+                        source={{ uri: player.player.photo }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
                     )}
                   </View>
-                  <Text style={styles.playerName}>{player.name}</Text>
-                  <Text style={styles.playerPosition}>{player.position}</Text>
+                  <Text style={styles.playerName}>{player.player.name}</Text>
+                  {/* <Text style={styles.playerPosition}>{player.statistics.}</Text> */}
                 </View>
               ))}
               

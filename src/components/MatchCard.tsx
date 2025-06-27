@@ -12,7 +12,12 @@ interface Props {
 
 export default function MatchCard({ item }: Props): JSX.Element {
   const navigation = useNavigation();
-  const onPressNavigateRoute = item.status === 'FT' ? 'Postmatch' : item.status === 'NS' ? 'Prematch' : 'Inplay';
+  const onPressNavigateRoute = 
+    item.status === 'FT' || item.status === 'AET' || item.status === 'PEN'
+      ? 'Postmatch'
+      : item.status === 'NS' || item.status === 'TBD'
+        ? 'Prematch'
+        : 'Inplay';
   const fixtureId = item.id;
   // log.debug(`MatchCard rendered for item with ID: ${fixtureId}, status: ${item.status}`);
   return (
@@ -50,10 +55,10 @@ export default function MatchCard({ item }: Props): JSX.Element {
             </View>
             <TouchableOpacity  
               style={styles.teamInfo}
-              onPress={() => navigation.navigate('TeamDetails')}
+              onPress={() => navigation.navigate('TeamDetails', {teamId: item.homeTeam.id})}
             >
               <View style={styles.teamInfo}>
-                <Text style={styles.teamName}>{item.homeTeam}</Text>
+                <Text style={styles.teamName}>{item.homeTeam.name}</Text>
                 {item.homeLogo ? (
                   <Image source={{ uri: item.homeLogo }} style={[styles.teamAvatar, styles.teamAvatarPlaceholder]} />
                 ) : (
@@ -63,16 +68,16 @@ export default function MatchCard({ item }: Props): JSX.Element {
             </TouchableOpacity>
             <View style={styles.scoreContainer}>
               <Text style={styles.scoreText}>
-                {item.homeScore !== null ? item.homeScore : item.status === 'NS' ? '' : '0'}
+                {item.homeScore !== null ? item.homeScore : (item.status === 'NS' || item.status === 'TBD') ? '' : '0'}
               </Text>
               <Text style={styles.scoreSeparator}>-</Text>
               <Text style={styles.scoreText}>
-                {item.awayScore !== null ? item.awayScore : item.status === 'NS' ? '' : '0'}
+                {item.awayScore !== null ? item.awayScore : (item.status === 'NS' || item.status === 'TBD') ? '' : '0'}
               </Text>
             </View>
             <TouchableOpacity 
               style={styles.teamInfo}
-              onPress={() => navigation.navigate('TeamDetails')}
+              onPress={() => navigation.navigate('TeamDetails', {teamId: item.awayTeam.id})}
             >
               <View style={styles.teamInfo}>
                 {item.awayLogo ? (
@@ -80,7 +85,7 @@ export default function MatchCard({ item }: Props): JSX.Element {
                 ) : (
                   <View style={styles.teamAvatar} />
                 )}
-                <Text style={styles.teamName}>{item.awayTeam}</Text>
+                <Text style={styles.teamName}>{item.awayTeam.name}</Text>
               </View>
             </TouchableOpacity>
           </View>

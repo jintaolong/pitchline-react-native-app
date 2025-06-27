@@ -184,7 +184,7 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
           team2_wins: 0,
           draws: 0,
         });
-        log.debug(summed);
+        // log.debug(summed);
         setStats({
           homeWin: summed.team1_wins,
           homeDraw: summed.draws,
@@ -260,21 +260,23 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
           {/* Match Info */}
           <View style={styles.matchInfo}>
             <Text style={styles.matchDate}>{fixture.kickoffDate}</Text>
+
             <View style={styles.teamsContainer}>
-              <View style={styles.teamSection}>
-                <View style={styles.teamLogo}>
-                  {fixture.homeTeam.logoUrl ? (
-                    <Image
-                      source={{ uri: fixture.homeTeam.logoUrl }}
-                      style={{ width: 32, height: 32, resizeMode: 'contain' }}
-                    />
-                  ) : (
-                    <Text style={styles.logoText}>{fixture.homeTeam.short}</Text>
-                  )}
+              <TouchableOpacity onPress={() => navigation.navigate('TeamDetails', {teamId: fixture.homeTeam.teamId})}>
+                <View style={styles.teamSection}>
+                  <View style={styles.teamLogo}>
+                    {fixture.homeTeam.logoUrl ? (
+                      <Image
+                        source={{ uri: fixture.homeTeam.logoUrl }}
+                        style={{ width: 32, height: 32, resizeMode: 'contain' }}
+                      />
+                    ) : (
+                      <Text style={styles.logoText}>{fixture.homeTeam.short}</Text>
+                    )}
+                  </View>
+                  <Text style={styles.teamName}>{fixture.homeTeam.name}</Text>
                 </View>
-                <Text style={styles.teamName}>{fixture.homeTeam.name}</Text>
-              </View>
-              
+              </TouchableOpacity>
               <View style={styles.timeSection}>
                 <Text style={styles.matchTime}>{fixture.kickoffTime.toLocaleUpperCase()}</Text>
                 <Text style={styles.venue}>
@@ -284,20 +286,21 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
                   {fixture.venue && typeof fixture.venue === 'object' && fixture.venue.city}
                 </Text>
               </View>
-              
-              <View style={styles.teamSection}>
-                <View style={styles.teamLogo}>
-                  {fixture.awayTeam.logoUrl ? (
-                    <Image
-                      source={{ uri: fixture.awayTeam.logoUrl }}
-                      style={{ width: 32, height: 32, resizeMode: 'contain' }}
-                    />
-                  ) : (
-                    <Text style={styles.logoText}>{fixture.awayTeam.short}</Text>
-                  )}
+              <TouchableOpacity onPress={() => navigation.navigate('TeamDetails', {teamId: fixture.awayTeam.teamId})}>
+                <View style={styles.teamSection}>
+                  <View style={styles.teamLogo}>
+                    {fixture.awayTeam.logoUrl ? (
+                      <Image
+                        source={{ uri: fixture.awayTeam.logoUrl }}
+                        style={{ width: 32, height: 32, resizeMode: 'contain' }}
+                      />
+                    ) : (
+                      <Text style={styles.logoText}>{fixture.awayTeam.short}</Text>
+                    )}
+                  </View>
+                  <Text style={styles.teamName}>{fixture.awayTeam.name}</Text>
                 </View>
-                <Text style={styles.teamName}>{fixture.awayTeam.name}</Text>
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -307,14 +310,14 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
             <View style={styles.lineupContainer}>
               <View style={styles.teamLineup}>
                 {homeLineup.map((player, index) => (
-                  <Text key={index} style={styles.playerText}>
+                    <Text key={`${player.name}-${index}`} style={styles.playerText}>
                     {player.number} {player.name}
-                  </Text>
+                    </Text>
                 ))}
               </View>
               <View style={styles.teamLineup}>
                 {awayLineup.map((player, index) => (
-                  <Text key={index} style={[styles.playerText, styles.rightAlign]}>
+                  <Text key={`${player.name}-${index}`} style={[styles.playerText, styles.rightAlign]}>
                     {player.name} {player.number}
                   </Text>
                 ))}
@@ -355,44 +358,7 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
                 }}
               />
             </View>
-            {/* <View style={{ width: '100%', height: 32, justifyContent: 'center', marginBottom: 16 }}>
-              <View
-              style={{
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                height: 8,
-                borderRadius: 8,
-                backgroundColor: '#6366F1',
-              }}
-              />
-              <Slider
-              minimumValue={summaryOptions[0].value}
-              maximumValue={summaryOptions[summaryOptions.length - 1].value}
-              step={1}
-              value={summaryWindow}
-              onValueChange={(val: number) => {
-                const nearest = summaryOptions.reduce((prev, curr) =>
-                Math.abs(curr.value - val) < Math.abs(prev.value - val) ? curr : prev
-                );
-                setSummaryWindow(nearest.value);
-              }}
-              minimumTrackTintColor="transparent"
-              maximumTrackTintColor="transparent"
-              thumbTintColor="#6366F1"
-              style={{width: 300, height: 40}}
-              />
-            </View> */}
-            
-            {/* <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-              {summaryOptions.filter((opt) => {
-                return opt.value == 1 || opt.value == 12 || opt.value == 24;
-              }).map(opt => (
-                <Text key={opt.value} style={{ fontSize: 10, color: '#6B7280' }}>{opt.label}</Text>
-              ))}
-            </View> */}
-
-            {/* Win/Draw/Loss */}
+             {/* Win/Draw/Loss */}
             <View style={styles.statsRow}>
               <Text style={styles.statsLabel}>Win/Draw/Loss</Text>
               <WDLBarChart win={stats.homeWin} draw={stats.homeDraw} loss={stats.homeLost} />
