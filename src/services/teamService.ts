@@ -3,6 +3,7 @@ import { ResultsDto } from "../dtos/Results";
 import log from "../utils/logger";
 import { H2HStatsDto } from "../dtos/Stats";
 import { TeamDto } from "../dtos/Teams";
+import { LeagueStandingDto } from "../dtos/Leagues";
 
 
 export const getH2HResults = async (homeId: number, awayId: number): Promise<ResultsDto | null> => {
@@ -84,7 +85,9 @@ export const getTeamDetails = async (teamId: number): Promise<TeamDto | null> =>
 };
 
 
-export const getLeagueStanding = async (leagueId: number, season: number): Promise<any | null> => {
+export const getLeagueStanding = async (leagueId: number, season: number): Promise<LeagueStandingDto | null> => {
+    // leagueId = 242;
+    season -= 1;
     log.debug(`Fetching standing for league ${leagueId} in season ${season}`);
     try {
         const response = await axios.get<any>(
@@ -96,6 +99,7 @@ export const getLeagueStanding = async (leagueId: number, season: number): Promi
             }
         );
         if (response.status === 200 && response.data) {
+            // log.debug(response.data)
             return response.data;
         }
         log.debug(`No standing found for league ${leagueId} for season ${season}`);

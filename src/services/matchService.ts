@@ -49,6 +49,9 @@ export const getFixture = async (fixtureId: number): Promise<FixtureResponseDto 
     if (response.status === 200){
       if (response.data.length == 1){
         return response.data[0];
+      } else if (response.data.length == 0){
+        log.debug(`Nothing returned`)
+        return null;
       } else{
         log.debug(`More than one fixture is found with id: ${fixtureId}`);
         log.debug(`Returning first one`);

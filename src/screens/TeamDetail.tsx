@@ -11,10 +11,12 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
-import { getTeamDetails } from '../services/teamService';
+import { getLeagueStanding, getTeamDetails } from '../services/teamService';
 import { TeamDto, TeamFixtureDto } from '../dtos/Teams';
-import { LeagueStandingDto } from '../dtos/Leagues';
+import { LeagueStandingDto, TeamStandingDto } from '../dtos/Leagues';
 import { RecentFixture, Team } from '../models/Teams';
+import { League, Standing } from '../models/Leagues';
+import PitchLineStandingTable from '../components/StandingTable';
 
 const { width } = Dimensions.get('window');
 
@@ -50,24 +52,9 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
     },
     fixtures: [],
   });
+  const [teamLeagues, setTeamLeagues] = useState<League | null>(null);
   const [mostRecentFixture, setMostRecentFixture] = useState<TeamFixtureDto | undefined>(undefined);
-  const [domesticLeagueStanding, setDomesticLeagueStanding] = useState<LeagueStandingDto>(
-    {
-      _id: "",
-      league_id: 0,
-      season: 0,
-      league: {
-        id: 0,
-        name: "",
-        country: "",
-        logo: "",
-        flag: "",
-        season: 0,
-        standings: [[]]
-      },
-      standings: [[]]
-    }
-  );
+  // const [domesticLeagueStanding, setDomesticLeagueStanding] = useState<Standing[]>([]);
   useEffect(() => {
     getTeamDetails(teamId).then((data: TeamDto | null) => {
       if(!!data){
@@ -78,6 +65,36 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
 
   const [recentFixtures, setRecentFixtures] = useState<RecentFixture[]>([]);
   useEffect(() => {
+    // update standing
+    getLeagueStanding(teamDetail.team.id, new Date().getFullYear()).then((data: LeagueStandingDto | null) => {
+      if(!!data){
+        setTeamLeagues({
+          id: data.league.id,
+          name: data.league.name,
+          country: data.league.country,
+          logo: data.league.logo,
+          flag: data.league.flag,
+          season: data.season,
+          currentSeason: data.season,
+          currentStandings: data.standings.map((standingGroup: TeamStandingDto[]) => {
+            return standingGroup.map((standing: TeamStandingDto) => {
+              return {
+                position: standing.rank,
+                team: {
+                  id: standing.team.id,
+                  name: standing.team.name,
+                  logo: standing.team.logo,
+                },
+                group: standing.group,
+                points: standing.points,
+                form: standing.form.split(''),
+              } as Standing;
+            });
+          }),
+        } as League);
+        // setDomesticLeagueStanding();
+      }
+    });
     // update recent form
     if (teamDetail && teamDetail.fixtures.length > 0) {
       const today = new Date();
@@ -133,15 +150,15 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
     }
     
     console.log('Recent Form:', recentFixtures);
-  }, [teamDetail])
+  }, [teamDetail]);
 
-  const leagueStandings = [
-    { position: 1, team: 'Arsenal', points: 30, form: ['W', 'W', 'W', 'W', 'W'] },
-    { position: 2, team: 'Manchester City', points: 29, form: ['W', 'W', 'W', 'W', 'D'] },
-    { position: 3, team: 'Liverpool FC', points: 27, form: ['W', 'W', 'W', 'W', 'W'] },
-    { position: 4, team: 'Chelsea', points: 25, form: ['W', 'W', 'W', 'W', 'W'] },
-    { position: 5, team: 'Tottenham', points: 23, form: ['L', 'L', 'W', 'W', 'W'] }
-  ];
+  // const leagueStandings = [
+  //   { position: 1, team: 'Arsenal', points: 30, form: ['W', 'W', 'W', 'W', 'W'] },
+  //   { position: 2, team: 'Manchester City', points: 29, form: ['W', 'W', 'W', 'W', 'D'] },
+  //   { position: 3, team: 'Liverpool FC', points: 27, form: ['W', 'W', 'W', 'W', 'W'] },
+  //   { position: 4, team: 'Chelsea', points: 25, form: ['W', 'W', 'W', 'W', 'W'] },
+  //   { position: 5, team: 'Tottenham', points: 23, form: ['L', 'L', 'W', 'W', 'W'] }
+  // ];
 
   const getFormColor = (result: string) => {
     switch (result) {
@@ -289,51 +306,32 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
             
             {/* League Tabs */}
             <View style={styles.leagueTabs}>
-              <TouchableOpacity 
-                style={[styles.leagueTab, activeLeague === 'Domestic League' && styles.activeLeagueTab]}
-                onPress={() => setActiveLeague('Domestic League')}
-              >
-                <Text style={[styles.leagueTabText, activeLeague === 'Domestic League' && styles.activeLeagueTabText]}>
-                  Domestic League
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.leagueTab, activeLeague === 'Regional League' && styles.activeLeagueTab]}
-                onPress={() => setActiveLeague('Regional League')}
-              >
-                <Text style={[styles.leagueTabText, activeLeague === 'Regional League' && styles.activeLeagueTabText]}>
-                  Regional League
-                </Text>
-              </TouchableOpacity>
+              {teamLeagues && teamLeagues.currentStandings && teamLeagues.currentStandings.length > 0 && teamLeagues.currentStandings.map((standing: Standing[], index) => {
+                let leagueName =  `Unknown League ${index + 1}`;
+                if (standing.length > 0){
+                  leagueName = standing[0].group;
+                  if (leagueName === 'Domestic League') {
+                    setActiveLeague('Domestic League');
+                  }
+                }
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    style={[styles.leagueTab, (activeLeague === leagueName || teamLeagues.currentStandings.length === 1) && styles.activeLeagueTab]}
+                    onPress={() => setActiveLeague(leagueName)}
+                  >
+                    <Text style={[styles.leagueTabText, activeLeague === leagueName && styles.activeLeagueTabText]}>
+                      {leagueName}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
             </View>
 
             {/* Standings Table */}
-            <View style={styles.standingsTable}>
-              {leagueStandings.map((team, index) => (
-                <View key={index} style={styles.standingRow}>
-                  <View style={[styles.positionBadge, team.position === 2 && styles.currentTeamBadge]}>
-                    <Text style={[styles.positionText, team.position === 2 && styles.currentTeamText]}>
-                      {team.position}
-                    </Text>
-                  </View>
-                  <View style={styles.teamLogo}>
-                    <Text style={styles.logoText}>{team.team.charAt(0)}</Text>
-                  </View>
-                  <Text style={[styles.standingTeamName, team.position === 2 && styles.currentTeamName]}>
-                    {team.team}
-                  </Text>
-                  <Text style={styles.standingPoints}>{team.points}</Text>
-                  <View style={styles.formDots}>
-                    {team.form.map((result, formIndex) => (
-                      <View 
-                        key={formIndex} 
-                        style={[styles.formDot, { backgroundColor: getFormColor(result) }]} 
-                      />
-                    ))}
-                  </View>
-                </View>
-              ))}
-            </View>
+            { teamLeagues && teamLeagues.currentStandings && teamLeagues.currentStandings.length > 0 && teamLeagues.currentStandings.map((standing: Standing[], index) => (
+              <PitchLineStandingTable key={index} standings={standing} teamId={teamId} />
+            ))}
           </View>
 
           {/* Club Ranking */}

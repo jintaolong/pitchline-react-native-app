@@ -31,11 +31,11 @@ export interface LeagueDto {
   id: number;
   name: string;
   country: string;
-  logo: string;
-  flag: string;
+  // logo: string;
+  // flag: string;
   season: number;
   round: string;
-  standings: boolean;
+  // standings: boolean;
 }
 
 export interface TeamDto {
