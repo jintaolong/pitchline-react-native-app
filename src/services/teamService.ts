@@ -61,6 +61,7 @@ export const getH2HStats = async (homeId: number, awayId: number, window: number
 
 
 export const getTeamDetails = async (teamId: number): Promise<TeamDto | null> => {
+    // teamId = 23;
     log.debug(`Fetching details for team ${teamId}`);
     try {
         const response = await axios.get<TeamDto>(

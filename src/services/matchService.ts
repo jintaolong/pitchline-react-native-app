@@ -18,7 +18,7 @@ export const getMatchLit = async (searchDate: string): Promise<FixtureResponseDt
             }
         }
     );
-    log.debug(`Received response with status: ${response.status}`);
+    // log.debug(`Received response with status: ${response.status}`);
     if (!response.status || response.status !== 200) {
         log.error(`Error fetching match list: ${response.statusText}`);
         return [];
@@ -83,7 +83,7 @@ export const getFixture = async (fixtureId: number): Promise<FixtureResponseDto 
           }
         }
       );
-      log.debug(`Received response with status: ${response.status}`);
+      // log.debug(`Received response with status: ${response.status}`);
       if (!response.status || response.status !== 200) {
         if (response.status && response.status === 404){
           log.info(`No line-up info found for ${fixtureId}`);
@@ -111,7 +111,7 @@ export const getFixture = async (fixtureId: number): Promise<FixtureResponseDto 
           }
         }
       );
-      log.debug(`Received response with status: ${response.status}`);
+      // log.debug(`Received response with status: ${response.status}`);
       if (!response.status || response.status !== 200) {
         if (response.status && response.status === 404) {
           log.info(`No events info found for ${fixtureId}`);
@@ -139,7 +139,7 @@ export const getFixture = async (fixtureId: number): Promise<FixtureResponseDto 
           }
         }
       );
-      log.debug(`Received response with status: ${response.status}`);
+      // log.debug(`Received response with status: ${response.status}`);
       if (!response.status || response.status !== 200) {
         if (response.status && response.status === 404) {
           log.info(`No stats info found for ${fixtureId}`);

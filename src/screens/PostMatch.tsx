@@ -227,7 +227,7 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
                     <Text style={styles.logoText}>{fixture?.homeTeam.short}</Text>
                   )}
                 </View>
-                <Text style={styles.teamName}>{fixture?.homeTeam.name}</Text>
+                <Text style={[styles.teamName, { textAlign: 'center' }]}>{fixture?.homeTeam.name}</Text>
               </View>
               
               <View style={styles.scoreSection}>
@@ -255,7 +255,7 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
                     <Text style={styles.logoText}>{fixture?.awayTeam.short}</Text>
                   )}
                 </View>
-                <Text style={styles.teamName}>{fixture?.awayTeam.name}</Text>
+                <Text style={[styles.teamName, { textAlign: 'center' }]}>{fixture?.awayTeam.name}</Text>
               </View>
             </View>
           </View>
@@ -528,6 +528,7 @@ const styles = StyleSheet.create({
   venue: {
     fontSize: 12,
     color: '#9CA3AF',
+    textAlign: 'center',
   },
   section: {
     padding: 20,

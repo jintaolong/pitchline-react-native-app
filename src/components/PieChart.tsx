@@ -51,7 +51,7 @@ const PitchlinePieChart: React.FC<PitchlinePieChartProps> = ({ data }) => {
       // height: 'auto'
     }}>
       {/* Left Legend */}
-      <View style={[styles.blockContainer, { alignItems: 'flex-end' }]}>
+      <View style={[styles.blockContainer, { alignItems: 'flex-start' }]}>
       {data[0] && (
         <View style={styles.legendContainer}>
           <View 
@@ -67,7 +67,7 @@ const PitchlinePieChart: React.FC<PitchlinePieChartProps> = ({ data }) => {
       )}
       </View>
       {/* Pie Chart */}
-      <View style={styles.blockContainer}>
+      <View style={[styles.blockContainer, { alignItems: 'center' }]}>
         <PieChart
           style={{ height: 100, width: 100 }}
           data={
@@ -83,7 +83,7 @@ const PitchlinePieChart: React.FC<PitchlinePieChartProps> = ({ data }) => {
         />
       </View>
       {/* Right Legend */}
-      <View style={[styles.blockContainer, { alignItems: 'flex-start' }]}>
+      <View style={[styles.blockContainer, { alignItems: 'flex-end' }]}>
       {data[1] && (
         <View style={styles.legendContainer}>
         <View>
@@ -105,8 +105,12 @@ const PitchlinePieChart: React.FC<PitchlinePieChartProps> = ({ data }) => {
 const styles = StyleSheet.create({
   blockContainer: {
     width: '33.33%',
-    height: '100%',
-    alignItems: 'center',
+    // minWidth: 0,
+    // maxWidth: '33.33%',
+    // height: '100%',
+    // alignItems: 'center',
+    // flexShrink: 1,
+    // flexGrow: 0,
   },
   legendCube: {
     width: 12,
@@ -117,21 +121,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#333',
     marginHorizontal: 8,
-    maxWidth: 120,
     flexShrink: 1,
+    flexWrap: 'wrap',
+    maxWidth: '100%',
   },
   legendValue: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginHorizontal: 2, // Reduced horizontal margin to bring value closer
+    marginHorizontal: 2,
+    flexShrink: 1,
+    maxWidth: '100%',
   },
   legendContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    minWidth: 120,
+    minWidth: 0,
+    maxWidth: '100%',
     justifyContent: 'center',
     flex: 1,
+    flexShrink: 1,
+    flexWrap: 'wrap',
   }
 });
 

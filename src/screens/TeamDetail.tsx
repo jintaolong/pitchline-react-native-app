@@ -1,4 +1,4 @@
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
@@ -12,14 +12,16 @@ import {
   Dimensions,
 } from 'react-native';
 import { getTeamDetails } from '../services/teamService';
-import { TeamDto } from '../dtos/Teams';
+import { TeamDto, TeamFixtureDto } from '../dtos/Teams';
 import { LeagueStandingDto } from '../dtos/Leagues';
+import { RecentFixture, Team } from '../models/Teams';
 
 const { width } = Dimensions.get('window');
 
 type TeamDetailsScreenRouteProp = RouteProp<{ params: { teamId: number } }, 'params'>;
 
 const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
+  const navigation = useNavigation();
   const [activeLeague, setActiveLeague] = useState('Domestic League');
   const {teamId} = route.params;
   const [teamDetail, setTeamDetail] = useState<TeamDto>({
@@ -46,7 +48,9 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
       surface: 'Grass',
       image: '',
     },
+    fixtures: [],
   });
+  const [mostRecentFixture, setMostRecentFixture] = useState<TeamFixtureDto | undefined>(undefined);
   const [domesticLeagueStanding, setDomesticLeagueStanding] = useState<LeagueStandingDto>(
     {
       _id: "",
@@ -72,14 +76,64 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
     });
   }, [teamId]);
 
-  const formResults = [
-    { result: 'W', competition: 'PL', color: '#10B981' },
-    { result: 'L', competition: 'UCL', color: '#EF4444' },
-    { result: 'W', competition: 'PL', color: '#10B981' },
-    { result: 'D', competition: 'UCL', color: '#F59E0B' },
-    { result: 'D', competition: 'PL', color: '#F59E0B' },
-    { result: 'O', competition: 'OPP', color: '#3B82F6', isUpcoming: true }
-  ];
+  const [recentFixtures, setRecentFixtures] = useState<RecentFixture[]>([]);
+  useEffect(() => {
+    // update recent form
+    if (teamDetail && teamDetail.fixtures.length > 0) {
+      const today = new Date();
+      const recentPastForm = teamDetail.fixtures.filter(fixture => {
+        return fixture.fixture.date && new Date(fixture.fixture.date) < today;
+      }).slice(-5, undefined).map((fixture: TeamFixtureDto) => {
+        let thisTeam = fixture.teams.home.id == teamId ? fixture.teams.home : fixture.teams.away;
+        let opponentTeam = fixture.teams.home.id == teamId ? fixture.teams.away : fixture.teams.home;
+        return {
+          result: thisTeam.winner ? 'W' : opponentTeam.winner ? 'L' : 'D',
+          competition: fixture.league.name,
+          fixtureId: fixture.fixture.id,
+          home: {
+            id: fixture.teams.home.id,
+            name: fixture.teams.home.name
+          } as Team,
+          away: {
+            id: fixture.teams.away.id,
+            name: fixture.teams.away.name
+          } as Team,
+          date: fixture.fixture.date,
+        } as RecentFixture
+      }); // Get the last 5 past fixtures
+      const futureForm = teamDetail.fixtures.filter(fixture => {
+        return fixture.fixture.date && new Date(fixture.fixture.date) > today;
+      }).slice(undefined, 5).map((fixture: TeamFixtureDto) => {
+        return {
+          result: 'O',
+          competition: fixture.league.name,
+          fixtureId: fixture.fixture.id,
+          home: {
+            id: fixture.teams.home.id,
+            name: fixture.teams.home.name
+          } as Team,
+          away: {
+            id: fixture.teams.away.id,
+            name: fixture.teams.away.name
+          } as Team,
+          date: fixture.fixture.date,
+        } as RecentFixture
+      });  // Get the next 5 future fixtures
+      setRecentFixtures([...recentPastForm, ...futureForm])
+      // get most recent one fixture
+      // const mostRecentFixture = recentPastForm.reduce((latest, current) => {
+      //   return new Date(current.date) > new Date(latest.date) ? current : latest;
+      // }, recentPastForm[0]);
+      const mostRecentFixture = teamDetail.fixtures.filter(fixture => {
+        return fixture.fixture.date && new Date(fixture.fixture.date) < today;
+      }).sort((a, b) => {
+        return new Date(b.fixture.date).getTime() - new Date(a.fixture.date).getTime();
+      }).at(0);
+      setMostRecentFixture(mostRecentFixture);
+    }
+    
+    console.log('Recent Form:', recentFixtures);
+  }, [teamDetail])
 
   const leagueStandings = [
     { position: 1, team: 'Arsenal', points: 30, form: ['W', 'W', 'W', 'W', 'W'] },
@@ -88,15 +142,6 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
     { position: 4, team: 'Chelsea', points: 25, form: ['W', 'W', 'W', 'W', 'W'] },
     { position: 5, team: 'Tottenham', points: 23, form: ['L', 'L', 'W', 'W', 'W'] }
   ];
-
-  // const squadMembers = [
-  //   { name: 'Kevin De Bruyne', position: 'Midfielder', hasPhoto: true },
-  //   { name: 'Erling Haaland', position: 'Forward', hasPhoto: true },
-  //   { name: 'Rodri', position: 'Midfielder', hasPhoto: true },
-  //   { name: 'Ruben Dias', position: 'Defender', hasPhoto: false },
-  //   { name: 'Ederson', position: 'Goalkeeper', hasPhoto: true },
-  //   { name: 'Bernardo Silva', position: 'Midfielder', hasPhoto: true }
-  // ];
 
   const getFormColor = (result: string) => {
     switch (result) {
@@ -128,22 +173,66 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
               <View style={styles.matchTeams}>
                 <View style={styles.teamInfo}>
                   <View style={styles.teamLogo}>
-                    <Text style={styles.logoText}>MC</Text>
+                    {mostRecentFixture?.teams.home.logo ? (
+                      <Image
+                        source={{ uri: mostRecentFixture.teams.home.logo }}
+                        style={{ width: 24, height: 24, borderRadius: 12 }}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <Text style={styles.logoText}>
+                        {mostRecentFixture?.teams.home.name?.charAt(0) ?? ''}
+                      </Text>
+                    )}
                   </View>
-                  <Text style={styles.teamName}>Manchester City</Text>
+                  <Text style={styles.teamName}>{mostRecentFixture?.teams.home.name ?? ''}</Text>
                 </View>
                 
                 <View style={styles.matchScore}>
-                  <Text style={styles.scoreText}>1 - 1</Text>
-                  <Text style={styles.matchDate}>2023-11-11</Text>
-                  <Text style={styles.competition}>Premier League</Text>
+                  <Text style={styles.matchDate}>
+                  {mostRecentFixture?.fixture.date
+                    ? (() => {
+                      const d = new Date(mostRecentFixture.fixture.date);
+                      const yyyy = d.getFullYear();
+                      const mm = String(d.getMonth() + 1).padStart(2, '0');
+                      const dd = String(d.getDate()).padStart(2, '0');
+                      return `${yyyy}-${mm}-${dd}`;
+                    })()
+                    : ''}
+                  </Text>
+                  <Text style={styles.scoreText}>{mostRecentFixture?.goals.home ?? 0} - {mostRecentFixture?.goals.away ?? 0}</Text>
+                  <Text style={styles.matchDate}>
+                  {mostRecentFixture?.fixture.date
+                    ? (() => {
+                      const d = new Date(mostRecentFixture.fixture.date);
+                      let hours = d.getUTCHours();
+                      const minutes = d.getUTCMinutes();
+                      const ampm = hours >= 12 ? ' PM' : ' AM';
+                      hours = hours % 12;
+                      hours = hours ? hours : 12; // the hour '0' should be '12'
+                      const min = String(minutes).padStart(2, '0');
+                      return `${hours}:${min}${ampm} GMT`;
+                    })()
+                    : ''}
+                  </Text>
+                  <Text style={styles.competition}>{mostRecentFixture?.league.name ?? ''}</Text>
                 </View>
                 
                 <View style={styles.teamInfo}>
-                  <View style={[styles.teamLogo, styles.liverpoolLogo]}>
-                    <Text style={styles.logoText}>L</Text>
+                  <View style={styles.teamLogo}>
+                    {mostRecentFixture?.teams.away.logo ? (
+                      <Image
+                        source={{ uri: mostRecentFixture.teams.away.logo }}
+                        style={{ width: 24, height: 24, borderRadius: 12 }}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <Text style={styles.logoText}>
+                        {mostRecentFixture?.teams.home.name?.charAt(0) ?? ''}
+                      </Text>
+                    )}
                   </View>
-                  <Text style={styles.teamName}>Liverpool FC</Text>
+                  <Text style={styles.teamName}>{mostRecentFixture?.teams.away.name ?? ''}</Text>
                 </View>
               </View>
             </View>
@@ -152,14 +241,46 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
           {/* Form & Upcoming */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Form & Upcoming</Text>
-            <View style={styles.formContainer}>
-              {formResults.map((form, index) => (
-                <View key={index} style={[styles.formBox, { backgroundColor: form.color }]}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{marginHorizontal: -8}}>
+              <View style={[styles.formContainer, {paddingHorizontal: 8}]}>
+              {recentFixtures.map((form, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                  styles.formBox,
+                  form.result === 'W'
+                    ? styles.formWin
+                    : form.result === 'L'
+                    ? styles.formLost
+                    : form.result === 'D'
+                    ? styles.formDraw
+                    : styles.formFuture,
+                  ]}
+                  onPress={() => {
+                  // @ts-ignore
+                  if (form.fixtureId) {
+                    // @ts-ignore
+                    if (typeof navigation !== 'undefined') {
+                    navigation.navigate(
+                      form.result !== 'O' ? 'Postmatch' : 'Prematch', 
+                      { fixtureId: form.fixtureId }
+                    );
+                    }
+                  }
+                  }}
+                >
                   <Text style={styles.formResult}>{form.result}</Text>
-                  <Text style={styles.formCompetition}>{form.competition}</Text>
-                </View>
+                  <Text style={styles.formCompetition}>
+                  {form.competition
+                    .split(' ')
+                    .map(word => word[0])
+                    .join('')
+                    .toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
               ))}
-            </View>
+              </View>
+            </ScrollView>
           </View>
 
           {/* League Standings */}
@@ -323,7 +444,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#6366F1',
+    // backgroundColor: '#6366F1',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -380,6 +501,18 @@ const styles = StyleSheet.create({
   formCompetition: {
     color: '#FFFFFF',
     fontSize: 10,
+  },
+  formWin: {
+    backgroundColor: '#10B981'
+  },
+  formLost: {
+    backgroundColor: '#EF4444'
+  },
+  formDraw: {
+    backgroundColor: '#F59E0B'
+  },
+  formFuture: {
+    backgroundColor: '#3B82F6'
   },
   leagueTabs: {
     flexDirection: 'row',
