@@ -18,18 +18,13 @@ const H2HStats: FC<H2HStatsProps> = ({result}) => {
     return (
       <TouchableOpacity onPress={() => navigation.navigate('Postmatch', { fixtureId: result.fixtureId })}>
         <View
-            key={
-          result.fixtureId && result.fixtureId !== 0
-              ? `${result.leagueShort}-${result.fixtureId}`
-              : `${result.leagueShort}-${Math.random().toString(36).substr(2, 9)}`
-            }
             style={[
-          styles.formBox,
-          result.homeScore > result.awayScore
-              ? styles.recentFormWin
-              : result.homeScore < result.awayScore
-              ? styles.recentFormLose
-              : styles.recentFormDraw
+              styles.formBox,
+              result.homeScore > result.awayScore
+                  ? styles.recentFormWin
+                  : result.homeScore < result.awayScore
+                  ? styles.recentFormLose
+                  : styles.recentFormDraw
             ]}
         >
             <Text style={styles.formText}>{result.winDrawLose}</Text>

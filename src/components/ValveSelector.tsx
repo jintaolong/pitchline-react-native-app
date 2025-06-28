@@ -61,7 +61,7 @@ const ValveSelector: React.FC<ValveSelectorProp> = ({onChange}) => {
                 <View style={[styles.boxRow, { width: trackWidth, left: 0 }]}>
                     {PERIOD_OPTIONS.map((item, index) => (
                         <TouchableOpacity
-                            key={item.value}
+                            key={`${item.value}-${item.index}`}
                             activeOpacity={0.8}
                             onPress={() => handleSelect(item.index)}
                             style={{ marginRight: item.index === PERIOD_OPTIONS.length - 1 ? 0 : SPACING }}
@@ -110,7 +110,7 @@ const ValveSelector: React.FC<ValveSelectorProp> = ({onChange}) => {
                 <View style={[styles.legendRow, { width: trackWidth, left: 0, top: ITEM_HEIGHT + 22 }]}>
                     {PERIOD_OPTIONS.map((item, index) => (
                         <View
-                            key={item.value}
+                            key={`${item.value}-${index}`}
                             style={{ width: ITEM_WIDTH, alignItems: 'center', marginRight: index === PERIOD_OPTIONS.length - 1 ? 0 : SPACING }}
                         >
                             <Text

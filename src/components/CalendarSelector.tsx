@@ -57,27 +57,29 @@ const CalendarSelector = ({ selectedDate, onSelectDate }: any) => {
     <View style={styles.container}>
       <View style={styles.calendarRow}>
         {mockCalendarDays.map((dayData, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[
+            <TouchableOpacity
+              key={`calendar-selector-${index}-${dayData.day}-${dayData.date}`}
+              style={[
               styles.dayContainer,
               dayData.isSelected && styles.selectedDayContainer
-            ]}
-            onPress={() => onSelectDate(`2025-06-${dayData.date}`)}
-          >
-            <Text style={[
+              ]}
+              onPress={() => onSelectDate(`2025-06-${dayData.date}`)}
+              accessibilityLabel={`calendar-selector-day-${dayData.day}-date-${dayData.date}`}
+              testID={`calendar-selector-btn-${index}-${dayData.day}-${dayData.date}`}
+            >
+              <Text style={[
               styles.dayText,
               dayData.isSelected && styles.selectedDayText
-            ]}>
+              ]}>
               {dayData.day}
-            </Text>
-            <Text style={[
+              </Text>
+              <Text style={[
               styles.dateText,
               dayData.isSelected && styles.selectedDateText
-            ]}>
+              ]}>
               {dayData.date}
-            </Text>
-          </TouchableOpacity>
+              </Text>
+            </TouchableOpacity>
         ))}
       </View>
     </View>

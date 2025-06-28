@@ -359,10 +359,13 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
             <Text style={styles.sectionTitle}>Match Timeline</Text>
             <View style={styles.timeline}>
               {matchEvents.map((event, index) => (
-                <View key={index} style={styles.timelineEvent}>
+                <View
+                  key={`${event.time}-${event.event}-${event.icon}-${event.color}-${index}`}
+                  style={styles.timelineEvent}
+                >
                   <Text style={styles.eventTime}>{event.time}</Text>
                   <View style={[styles.eventIcon, { backgroundColor: event.color }]}>
-                    <Text style={styles.eventIconText}>{event.icon}</Text>
+                  <Text style={styles.eventIconText}>{event.icon}</Text>
                   </View>
                   <Text style={styles.eventDescription}>{event.event}</Text>
                 </View>
@@ -394,16 +397,22 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
             <View style={styles.lineupContainer}>
               <View style={styles.teamLineup}>
                 {homeLineup.map((player, index) => (
-                  <Text key={index} style={styles.playerText}>
+                    <Text
+                    key={`${player.name}-${player.number}-${index}`}
+                    style={styles.playerText}
+                    >
                     {player.number} {player.name}
-                  </Text>
+                    </Text>
                 ))}
               </View>
               <View style={styles.teamLineup}>
                 {awayLineup.map((player, index) => (
-                  <Text key={index} style={[styles.playerText, styles.rightAlign]}>
+                    <Text
+                    key={`${player.name}-${player.number}-${index}`}
+                    style={[styles.playerText, styles.rightAlign]}
+                    >
                     {player.name} {player.number}
-                  </Text>
+                    </Text>
                 ))}
               </View>
             </View>

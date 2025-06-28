@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -9,10 +9,56 @@ import {
   StatusBar,
   Dimensions,
 } from 'react-native';
+import { Player } from '../models/Players';
+import { getPlayerDetail } from '../services/playerService';
+import { PlayerDataDto } from '../dtos/Players';
 
 const { width } = Dimensions.get('window');
 
-const PlayerDetailsScreen = () => {
+const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
+
+  const [player, setPlayer] = React.useState<Player>({
+    info: {
+      icon: '👤',
+      label: 'X the GOAT',
+      value: 'Forward'
+    },
+    careerTimeline: [],
+    achievements: [],
+    radarAttributes: []
+  });
+
+  useEffect(() => {
+    getPlayerDetail(playerId).then((data: PlayerDataDto | null) => {
+      if (!!data) {
+        setPlayer({
+          info: {
+            icon: data.info.icon,
+            label: data.info.label,
+            value: data.info.value
+          },
+          careerTimeline: data.careerTimeline.map(item => ({
+            team: item.team,
+            period: item.period,
+            isActive: item.isActive
+          })),
+          achievements: data.achievements.map(item => ({
+            title: item.title,
+            icon: item.icon,
+            color: item.color,
+            count: item.count,
+            subtitle: item.subtitle
+          })),
+          radarAttributes: data.radarAttributes.map(attr => ({
+            attribute: attr.attribute,
+            value: attr.value
+          }))
+        } as Player);
+      }
+    });
+  }, [playerId]);
+
+
   const playerInfo = [
     { icon: '🏳️', label: 'Nationality', value: 'Argentina' },
     { icon: '📅', label: 'Date of Birth', value: 'June 24, 1987' },

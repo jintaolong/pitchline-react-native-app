@@ -52,16 +52,16 @@ export default function Filters({
       <Text style={styles.title}>Filters</Text>
       <View style={styles.filterRow}>
         {presetFilters.map((filter) => (
-          <TouchableOpacity
-            key={filter}
+            <TouchableOpacity
+            key={`filter-${filter}-${selectedFilters[filter] ? selectedFilters[filter] : 'inactive'}`}
             style={[
               styles.filterButton,
               selectedFilters[filter] && styles.filterButtonActive,
             ]}
             onPress={() => toggleFilter(filter)}
-          >
+            >
             <Text style={styles.filterText}>{filter}</Text>
-          </TouchableOpacity>
+            </TouchableOpacity>
         ))}
       </View>
 

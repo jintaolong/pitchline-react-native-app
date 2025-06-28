@@ -7,39 +7,45 @@ const PitchLineStandingTable = ({ standings, teamId }: { standings: Standing[], 
     return (
         <View style={styles.standingsTable}>
             {standings.map((team: Standing, index: number) => (
-                <View key={index} style={styles.standingRow}>
-                    <View style={[styles.positionBadge, team.team.id === teamId &&  styles.currentTeamBadge]}>
-                        <Text style={[styles.positionText, team.team.id === teamId && styles.currentTeamText]}>
-                            {team.position}
-                        </Text>
+                <View key={`${team.team.id}-${team.position}`} style={styles.standingRow}>
+                  <View style={[styles.positionBadge, team.team.id === teamId &&  styles.currentTeamBadge]}>
+                    <Text style={[styles.positionText, team.team.id === teamId && styles.currentTeamText]}>
+                      {team.position}
+                    </Text>
                 </View>
                 <View style={styles.teamLogo}>
-                    {team.team.logo ? (
-                        <Image
-                            source={{ uri: team.team.logo }}
-                            style={{ width: 28, height: 28, borderRadius: 14 }}
-                            resizeMode="contain"
-                        />
-                    ) : (
-                        <Text style={styles.logoText}>{team.team.name.charAt(0)}</Text>
-                    )}
+                  {team.team.logo ? (
+                    <Image
+                      source={{ uri: team.team.logo }}
+                      style={{ width: 28, height: 28, borderRadius: 14 }}
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <Text style={styles.logoText}>{team.team.name.charAt(0)}</Text>
+                  )}
                 </View>
                 <Text style={[styles.standingTeamName, team.team.id === teamId && styles.currentTeamName]}>
-                    {team.team.name}
+                  {team.team.name}
                 </Text>
                 <Text style={styles.standingPoints}>{team.points}</Text>
                 <View style={styles.formDots}>
-                    {team.form.map((result, formIndex) => (
-                    <View 
-                        key={formIndex} 
-                        style={[
-                            styles.formDot, 
-                            result === 'W' ? styles.formWin : result === 'L' ? styles.formLost : result === 'D' ? styles.formDraw : styles.formFuture
-                        ]}
+                  {team.form.map((result, formIndex) => (
+                    <View
+                    key={`${team.team.id}-${formIndex}`}
+                    style={[
+                      styles.formDot,
+                      result === 'W'
+                      ? styles.formWin
+                      : result === 'L'
+                      ? styles.formLost
+                      : result === 'D'
+                      ? styles.formDraw
+                      : styles.formFuture,
+                    ]}
                     />
-                    ))}
+                  ))}
                 </View>
-            </View>
+              </View>
             ))}
         </View>
 

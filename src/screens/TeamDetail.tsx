@@ -54,7 +54,6 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
   });
   const [teamLeagues, setTeamLeagues] = useState<League | null>(null);
   const [mostRecentFixture, setMostRecentFixture] = useState<TeamFixtureDto | undefined>(undefined);
-  // const [domesticLeagueStanding, setDomesticLeagueStanding] = useState<Standing[]>([]);
   useEffect(() => {
     getTeamDetails(teamId).then((data: TeamDto | null) => {
       if(!!data){
@@ -92,7 +91,6 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
             });
           }),
         } as League);
-        // setDomesticLeagueStanding();
       }
     });
     // update recent form
@@ -149,25 +147,17 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
       setMostRecentFixture(mostRecentFixture);
     }
     
-    console.log('Recent Form:', recentFixtures);
+    // console.log('Recent Form:', recentFixtures);
   }, [teamDetail]);
 
-  // const leagueStandings = [
-  //   { position: 1, team: 'Arsenal', points: 30, form: ['W', 'W', 'W', 'W', 'W'] },
-  //   { position: 2, team: 'Manchester City', points: 29, form: ['W', 'W', 'W', 'W', 'D'] },
-  //   { position: 3, team: 'Liverpool FC', points: 27, form: ['W', 'W', 'W', 'W', 'W'] },
-  //   { position: 4, team: 'Chelsea', points: 25, form: ['W', 'W', 'W', 'W', 'W'] },
-  //   { position: 5, team: 'Tottenham', points: 23, form: ['L', 'L', 'W', 'W', 'W'] }
-  // ];
-
-  const getFormColor = (result: string) => {
-    switch (result) {
-      case 'W': return '#10B981';
-      case 'L': return '#EF4444';
-      case 'D': return '#F59E0B';
-      default: return '#9CA3AF';
-    }
-  };
+  // const getFormColor = (result: string) => {
+  //   switch (result) {
+  //     case 'W': return '#10B981';
+  //     case 'L': return '#EF4444';
+  //     case 'D': return '#F59E0B';
+  //     default: return '#9CA3AF';
+  //   }
+  // };
 
   return (
     <>
@@ -262,37 +252,37 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
               <View style={[styles.formContainer, {paddingHorizontal: 8}]}>
               {recentFixtures.map((form, index) => (
                 <TouchableOpacity
-                  key={index}
+                  key={`${index}`}
                   style={[
                   styles.formBox,
                   form.result === 'W'
-                    ? styles.formWin
-                    : form.result === 'L'
-                    ? styles.formLost
-                    : form.result === 'D'
-                    ? styles.formDraw
-                    : styles.formFuture,
+                  ? styles.formWin
+                  : form.result === 'L'
+                  ? styles.formLost
+                  : form.result === 'D'
+                  ? styles.formDraw
+                  : styles.formFuture,
                   ]}
                   onPress={() => {
                   // @ts-ignore
                   if (form.fixtureId) {
-                    // @ts-ignore
-                    if (typeof navigation !== 'undefined') {
-                    navigation.navigate(
-                      form.result !== 'O' ? 'Postmatch' : 'Prematch', 
-                      { fixtureId: form.fixtureId }
-                    );
-                    }
+                  // @ts-ignore
+                  if (typeof navigation !== 'undefined') {
+                  navigation.navigate(
+                    form.result !== 'O' ? 'Postmatch' : 'Prematch', 
+                    { fixtureId: form.fixtureId }
+                  );
+                  }
                   }
                   }}
                 >
                   <Text style={styles.formResult}>{form.result}</Text>
                   <Text style={styles.formCompetition}>
                   {form.competition
-                    .split(' ')
-                    .map(word => word[0])
-                    .join('')
-                    .toUpperCase()}
+                  .split(' ')
+                  .map(word => word[0])
+                  .join('')
+                  .toUpperCase()}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -306,32 +296,43 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
             
             {/* League Tabs */}
             <View style={styles.leagueTabs}>
-              {teamLeagues && teamLeagues.currentStandings && teamLeagues.currentStandings.length > 0 && teamLeagues.currentStandings.map((standing: Standing[], index) => {
-                let leagueName =  `Unknown League ${index + 1}`;
-                if (standing.length > 0){
-                  leagueName = standing[0].group;
-                  if (leagueName === 'Domestic League') {
-                    setActiveLeague('Domestic League');
+              {teamLeagues 
+                && teamLeagues.currentStandings 
+                && teamLeagues.currentStandings.length > 0 
+                && teamLeagues.currentStandings.map((standing: Standing[], index) => {
+                  let leagueName =  `Unknown League ${index + 1}`;
+                  if (standing.length > 0){
+                    leagueName = standing[0].group;
+                    if (leagueName === 'Domestic League') {
+                      setActiveLeague('Domestic League');
+                    }
                   }
-                }
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    style={[styles.leagueTab, (activeLeague === leagueName || teamLeagues.currentStandings.length === 1) && styles.activeLeagueTab]}
-                    onPress={() => setActiveLeague(leagueName)}
-                  >
-                    <Text style={[styles.leagueTabText, activeLeague === leagueName && styles.activeLeagueTabText]}>
-                      {leagueName}
-                    </Text>
-                  </TouchableOpacity>
-                )
+                  return (
+                      <TouchableOpacity
+                      key={`${leagueName}-${index}`}
+                      style={[styles.leagueTab, (activeLeague === leagueName || teamLeagues.currentStandings.length === 1) && styles.activeLeagueTab]}
+                      onPress={() => setActiveLeague(leagueName)}
+                      >
+                      <Text style={[styles.leagueTabText, activeLeague === leagueName && styles.activeLeagueTabText]}>
+                        {leagueName}
+                      </Text>
+                      </TouchableOpacity>
+                  )
               })}
             </View>
 
             {/* Standings Table */}
-            { teamLeagues && teamLeagues.currentStandings && teamLeagues.currentStandings.length > 0 && teamLeagues.currentStandings.map((standing: Standing[], index) => (
-              <PitchLineStandingTable key={index} standings={standing} teamId={teamId} />
-            ))}
+            {teamLeagues && teamLeagues.currentStandings && teamLeagues.currentStandings.length > 0 &&
+              teamLeagues.currentStandings.map((standing: Standing[], index) => {
+              const groupName = standing.length > 0 ? standing[0].group : `group-${index}`;
+              return (
+                <PitchLineStandingTable
+                key={`${groupName}-${index}`}
+                standings={standing}
+                teamId={teamId}
+                />
+              );
+              })}
           </View>
 
           {/* Club Ranking */}
@@ -349,32 +350,31 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
             <Text style={styles.sectionTitle}>Squad & Management</Text>
             <View style={styles.squadGrid}>
               {teamDetail.squad.map((player, index) => (
-                <View key={index} style={styles.playerCard}>
+                <TouchableOpacity
+                  key={player.player.id ? `player-${index}`: index}
+                  style={styles.playerCard}
+                  onPress={() => {
+                  navigation.navigate('PlayerDetails', { playerId: player.player.id });
+                  }}
+                >
                   <View style={styles.playerPhoto}>
-                    {!player.player.photo ? (
-                      <View style={styles.photoPlaceholder}>
-                        <Text style={styles.photoText}>👤</Text>
-                      </View>
-                    ) : (
-                      // <View style={styles.noPhoto} />
-                      <Image
-                        source={{ uri: player.player.photo }}
-                        style={{ width: '100%', height: '100%' }}
-                        resizeMode="cover"
-                      />
-                    )}
+                  {!player.player.photo ? (
+                    <View style={styles.photoPlaceholder}>
+                    <Text style={styles.photoText}>👤</Text>
+                    </View>
+                  ) : (
+                    <Image
+                    source={{ uri: player.player.photo }}
+                    style={{ width: '100%', height: '100%' }}
+                    resizeMode="cover"
+                    />
+                  )}
                   </View>
                   <Text style={styles.playerName}>{player.player.name}</Text>
-                  {/* <Text style={styles.playerPosition}>{player.statistics.}</Text> */}
-                </View>
+                  {/* <Text style={styles.playerPosition}>{player.statistics.position}</Text> */}
+                </TouchableOpacity>
               ))}
               
-              {/* Large placeholder card */}
-              <View style={styles.largePlayerCard}>
-                <View style={styles.largePlayerPhoto}>
-                  <View style={styles.largePhotoPlaceholder} />
-                </View>
-              </View>
             </View>
           </View>
         </ScrollView>
