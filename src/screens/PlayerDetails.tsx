@@ -3,15 +3,17 @@ import {
   SafeAreaView,
   View,
   Text,
+  Image,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
   StatusBar,
   Dimensions,
 } from 'react-native';
-import { Player } from '../models/Players';
+import { Player, PlayerCareer, PlayerInfo, PlayerLeague, PlayerTeam } from '../models/Players';
 import { getPlayerDetail } from '../services/playerService';
 import { PlayerDataDto } from '../dtos/Players';
+import { Team } from '../models/Teams';
 
 const { width } = Dimensions.get('window');
 
@@ -19,62 +21,116 @@ const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
 
   const [player, setPlayer] = React.useState<Player>({
     info: {
-      icon: '👤',
-      label: 'X the GOAT',
-      value: 'Forward'
+      name: '',
+      age: 0,
+      position: '',
+      nationality: '',
+      height: '',
+      weight: '',
+      photo: '',
+      birth: {
+        date: '',
+        place: '',
+        country: ''
+      },
+      teams: [],
+      leagues: [],
     },
-    careerTimeline: [],
-    achievements: [],
-    radarAttributes: []
+    careerTimeline: [] as PlayerCareer[],
   });
 
   useEffect(() => {
     getPlayerDetail(playerId).then((data: PlayerDataDto | null) => {
       if (!!data) {
+        // get current team player is playing for
+        let currentTeams: PlayerTeam[] = [];
+        let currentLeagues: PlayerLeague[] = [];
+        let playerCareer: PlayerCareer[] = [];
+        data.statistics
+          .filter(stat => stat.league.season === new Date().getFullYear())
+          .forEach(stat => {
+            if (!currentTeams.some(team => team.id === stat.team.id)) {
+              currentTeams.push(stat.team as PlayerTeam);
+            }
+            if (!currentLeagues.some(league => league.id === stat.league.id)) {
+              currentLeagues.push(stat.league as PlayerLeague);
+            }
+          });
+        let currentCareer: PlayerCareer;
+        data.statistics
+          .filter(stat => data.player.nationality !== stat.team.name) // filter out statistics for national team (only focus on club career here)
+          .sort((a, b) => b.league.season - a.league.season)
+          .forEach(stat => {
+            // check if the current career already exists for the player
+            if (playerCareer.length > 0) {
+              currentCareer = playerCareer.pop() as PlayerCareer;
+              if (stat.team.id === currentCareer.team.id 
+                && currentCareer.start === stat.league.season.toString()
+              ){
+                playerCareer.push(currentCareer);
+              }else{
+                if (currentCareer.team.id === stat.team.id 
+                    && currentCareer.start === stat.league.season.toString() + 1) {
+                    // update the start year if it was the previous season wth same team
+                    currentCareer.start = stat.league.season.toString();
+                    playerCareer.push(currentCareer);
+                  } else {
+                    // this is a new previous career season
+                    playerCareer.push(currentCareer);
+                    let newPreviousCareer = {
+                      team: stat.team as PlayerTeam,
+                      start: stat.league.season.toString(),
+                      end: stat.league.season.toString(),
+                      isActive: stat.league.season === new Date().getFullYear()
+                    } as PlayerCareer;
+                    playerCareer.push(newPreviousCareer);
+                  }
+              }
+            } else {
+              playerCareer.push({
+                team: stat.team as PlayerTeam,
+                start: stat.league.season.toString(),
+                end: stat.league.season.toString(),
+                isActive: stat.league.season === new Date().getFullYear()
+              });
+            }
+          });
         setPlayer({
           info: {
-            icon: data.info.icon,
-            label: data.info.label,
-            value: data.info.value
-          },
-          careerTimeline: data.careerTimeline.map(item => ({
-            team: item.team,
-            period: item.period,
-            isActive: item.isActive
-          })),
-          achievements: data.achievements.map(item => ({
-            title: item.title,
-            icon: item.icon,
-            color: item.color,
-            count: item.count,
-            subtitle: item.subtitle
-          })),
-          radarAttributes: data.radarAttributes.map(attr => ({
-            attribute: attr.attribute,
-            value: attr.value
-          }))
+            name: data.player.name,
+            age: data.player.age,
+            // position: data.player.position,
+            nationality: data.player.nationality,
+            height: data.player.height,
+            weight: data.player.weight,
+            photo: data.player.photo,
+            birth: {
+              date: data.player.birth.date,
+              place: data.player.birth.place,
+              country: data.player.birth.country
+            },
+            teams: currentTeams,
+            leagues: currentLeagues,
+          } as PlayerInfo,
+          careerTimeline: playerCareer as PlayerCareer[],
+          // achievements: data.player.achievements.map(achievement => ({
+          //   title: achievement.title,
+          //   type: achievement.type,
+          //   description: achievement.description,
+          //   icon: achievement.icon,
+          //   color: achievement.color,
+          //   count: achievement.count,
+          //   subtitle: achievement.subtitle
+          // })),
+          // radarAttributes: data.player.radarAttributes.map(attribute => ({
+          //   attribute: attribute.attribute,
+          //   value: attribute.value
+          // }))
         } as Player);
+        
       }
     });
   }, [playerId]);
-
-
-  const playerInfo = [
-    { icon: '🏳️', label: 'Nationality', value: 'Argentina' },
-    { icon: '📅', label: 'Date of Birth', value: 'June 24, 1987' },
-    { icon: '#', label: 'Number', value: '10' },
-    { icon: '🦶', label: 'Preferred Foot', value: 'Left' },
-    { icon: '💰', label: 'Valuation', value: '€35M' },
-    { icon: '📏', label: 'Height', value: '1.70m' },
-    { icon: '⚖️', label: 'Weight', value: '72kg' },
-    { icon: '📋', label: 'Contract Ends', value: '2025' }
-  ];
-
-  const careerTimeline = [
-    { team: 'FC Barcelona', period: '2004 - 2021', isActive: false },
-    { team: 'Paris Saint-Germain', period: '2021 - 2023', isActive: false },
-    { team: 'Inter Miami CF', period: '2023 - Present', isActive: true }
-  ];
 
   const achievements = [
     { title: 'Ballon d\'Or', icon: '🏆', color: '#F59E0B', count: null },
@@ -114,26 +170,40 @@ const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
           <View style={styles.playerProfile}>
             <View style={styles.playerImageContainer}>
               <View style={styles.playerImage}>
-                <Text style={styles.playerImageText}>👤</Text>
+                {player.info.photo ? (
+                  <Image
+                    source={{ uri: player.info.photo }}
+                    style={{ width: 80, height: 80, borderRadius: 40 }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text style={styles.playerImageText}>👤</Text>
+                )}
               </View>
             </View>
             <View style={styles.playerInfo}>
-              <Text style={styles.playerName}>Lionel Messi</Text>
-              <Text style={styles.playerPosition}>Forward</Text>
+              <Text style={styles.playerName}>{player.info.name}</Text>
+              <Text style={styles.playerPosition}>{player.info.position}</Text>
               <View style={styles.teamInfo}>
                 <View style={styles.teamLogo}>
-                  <Text style={styles.teamLogoText}>IM</Text>
+                  <Text style={styles.teamLogoText}>{
+                  player.info.teams.length > 0 
+                  && !!player.info.teams[0].name 
+                    ? player.info.teams[0].name : ''}</Text>
                 </View>
-                <Text style={styles.teamName}>Inter Miami CF</Text>
+                <Text style={styles.teamName}>{
+                  player.info.teams.length > 0 
+                  && !!player.info.teams[0].name 
+                    ? player.info.teams[0].name : ''}</Text>
               </View>
               <View style={styles.ratingsContainer}>
                 <View style={styles.ratingBadge}>
                   <Text style={styles.ratingLabel}>Overall</Text>
-                  <Text style={styles.ratingValue}>92</Text>
+                  <Text style={styles.ratingValue}>?</Text>
                 </View>
                 <View style={styles.ratingBadge}>
                   <Text style={styles.ratingLabel}>Potential</Text>
-                  <Text style={styles.ratingValue}>92</Text>
+                  <Text style={styles.ratingValue}>?</Text>
                 </View>
               </View>
             </View>
@@ -143,15 +213,25 @@ const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Player Information</Text>
             <View style={styles.infoGrid}>
-              {playerInfo.map((info, index) => (
+                {[
+                { icon: '🏳️', label: 'Nationality', value: player.info.nationality },
+                { icon: '📅', label: 'Date of Birth', value: player.info.birth.date },
+                { icon: '#', label: 'Age', value: player.info.age?.toString() },
+                { icon: '🦶', label: 'Position', value: player.info.position },
+                { icon: '📏', label: 'Height', value: player.info.height },
+                { icon: '⚖️', label: 'Weight', value: player.info.weight },
+                { icon: '🌍', label: 'Birth Place', value: player.info.birth.place },
+                { icon: '🏠', label: 'Birth Country', value: player.info.birth.country },
+                { icon: '🏟️', label: 'Current Team', value: player.info.teams[0]?.name || '' },
+                ].map((info, index) => (
                 <View key={index} style={styles.infoRow}>
                   <View style={styles.infoLeft}>
-                    <Text style={styles.infoIcon}>{info.icon}</Text>
-                    <Text style={styles.infoLabel}>{info.label}</Text>
+                  <Text style={styles.infoIcon}>{info.icon}</Text>
+                  <Text style={styles.infoLabel}>{info.label}</Text>
                   </View>
                   <Text style={styles.infoValue}>{info.value}</Text>
                 </View>
-              ))}
+                ))}
             </View>
           </View>
 
@@ -159,18 +239,28 @@ const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Career Timeline</Text>
             <View style={styles.timeline}>
-              {careerTimeline.map((career, index) => (
+              {player.careerTimeline?.map((career, index) => (
                 <View key={index} style={styles.timelineItem}>
                   <View style={[styles.timelineDot, career.isActive && styles.activeTimelineDot]} />
                   <View style={styles.timelineContent}>
                     <View style={styles.teamLogo}>
                       <Text style={styles.teamLogoText}>
-                        {career.team.split(' ').map(word => word.charAt(0)).join('')}
+                        {career.team.logo ? (
+                          <Image
+                            source={{ uri: career.team.logo }}
+                            style={{ width: 20, height: 20, borderRadius: 10 }}
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <Text style={styles.teamLogoText}>?</Text>
+                        )}
                       </Text>
                     </View>
                     <View style={styles.timelineText}>
-                      <Text style={styles.timelineTeam}>{career.team}</Text>
-                      <Text style={styles.timelinePeriod}>{career.period}</Text>
+                      <Text style={styles.timelineTeam}>{career.team.name}</Text>
+                      <Text style={styles.timelinePeriod}>
+                        {career.start} - {career.end !== career.start ? career.end : 'Now'}
+                      </Text>
                     </View>
                   </View>
                 </View>
@@ -224,7 +314,7 @@ const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
       </SafeAreaView>
     </>
   );
-};
+    };
 
 const styles = StyleSheet.create({
   container: {

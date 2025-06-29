@@ -4,6 +4,15 @@ export interface PlayerTeam {
     logo?: string;
 }
 
+export interface PlayerLeague{
+    id: number;
+    name: string;
+    country: string;
+    logo: string;
+    flag: string;
+    season: number;
+}
+
 export interface PlayerInfo{
     name: string;
     age: number;
@@ -17,24 +26,20 @@ export interface PlayerInfo{
         place: string;
         country: string;
     };
-    team: {
-        id: number;
-        name: string;
-        logo: string;
-    };
-    league: {
-        id: number;
-        name: string;
-        country: string;
-        logo: string;
-        flag: string;
-        season: number;
-    };
+    teams: PlayerTeam[];
+    leagues: PlayerLeague[];
 }
+
+// export interface PlayerCareerPeriod{
+//     start: string;
+//     end: string;
+// }
 
 export interface PlayerCareer {
     team: PlayerTeam;
-    period: string;
+    start: string;
+    end?: string;
+    // period: PlayerCareerPeriod;
     isActive: boolean;
 }
 
@@ -50,9 +55,9 @@ export interface PlayerAchievement {
 
 export interface Player {
     info: PlayerInfo;
-    team: PlayerTeam;
-    careerTimeline: PlayerCareer[];
-    achievements: PlayerAchievement[];
+    // team: PlayerTeam;
+    careerTimeline?: PlayerCareer[];
+    achievements?: PlayerAchievement[];
     // radarAttributes: {
     //     attribute: string;
     //     value: number;
