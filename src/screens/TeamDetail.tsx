@@ -12,7 +12,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { getLeagueStanding, getTeamDetails } from '../services/teamService';
-import { TeamDto, TeamFixtureDto } from '../dtos/Teams';
+import { CoachCareerDto, TeamDto, TeamFixtureDto } from '../dtos/Teams';
 import { LeagueStandingDto, TeamStandingDto } from '../dtos/Leagues';
 import { RecentFixture, Team } from '../models/Teams';
 import { League, Standing } from '../models/Leagues';
@@ -39,18 +39,50 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
       national: false,
       logo: '',
     },
-    coach: {},
-    squad: [],
-    venue: {
+    coach: {
       id: 1,
-      name: 'Dummy Stadium',
-      address: '123 Dummy St',
-      city: 'Dummytown',
-      capacity: 10000,
-      surface: 'Grass',
-      image: '',
+      name: 'Dummy Coach',
+      firstname: 'John',
+      lastname: 'Doe',
+      age: 50,
+      nationality: 'Nowhere',
+      photo: '',
+      height: "180",
+      weight: "75",
+      team: {
+        id: 1,
+        name: 'Dummy Team',
+        logo: '',
+      },
+      birth: {
+        date: '1973-01-01',
+        place: 'Nowhere',
+        country: 'Nowhere',
+      },
+      career: [
+        {
+          team: {
+            id: 1,
+            name: 'Dummy Team',
+            logo: '',
+          },
+          start: '2000-01-01',
+          end: '2010-01-01',
+        } as CoachCareerDto
+      ]
     },
-    fixtures: [],
+    current_squad: [],
+    // venue: {
+    //   id: 1,
+    //   name: 'Dummy Stadium',
+    //   address: '123 Dummy St',
+    //   city: 'Dummytown',
+    //   capacity: 10000,
+    //   surface: 'Grass',
+    //   image: '',
+    // },
+    past_fixtures: [],
+    future_fixtures: [],
   });
   const [teamLeagues, setTeamLeagues] = useState<League | null>(null);
   const [mostRecentFixture, setMostRecentFixture] = useState<TeamFixtureDto | undefined>(undefined);
@@ -65,7 +97,7 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
   const [recentFixtures, setRecentFixtures] = useState<RecentFixture[]>([]);
   useEffect(() => {
     // update standing
-    getLeagueStanding(teamDetail.team.id, new Date().getFullYear()).then((data: LeagueStandingDto | null) => {
+    getLeagueStanding(teamDetail.team_id, new Date().getFullYear()).then((data: LeagueStandingDto | null) => {
       if(!!data){
         setTeamLeagues({
           id: data.league.id,
@@ -94,15 +126,12 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
       }
     });
     // update recent form
-    if (teamDetail && teamDetail.fixtures.length > 0) {
+    if (teamDetail && teamDetail.past_fixtures.length > 0) {
       const today = new Date();
-      const recentPastForm = teamDetail.fixtures.filter(fixture => {
-        return fixture.fixture.date && new Date(fixture.fixture.date) < today;
-      }).slice(-5, undefined).map((fixture: TeamFixtureDto) => {
-        let thisTeam = fixture.teams.home.id == teamId ? fixture.teams.home : fixture.teams.away;
-        let opponentTeam = fixture.teams.home.id == teamId ? fixture.teams.away : fixture.teams.home;
+      const recentPastForm = teamDetail.past_fixtures.map((fixture: TeamFixtureDto) => {
+        let isHome = fixture.teams.home.id === teamDetail.team_id;
         return {
-          result: thisTeam.winner ? 'W' : opponentTeam.winner ? 'L' : 'D',
+          result: isHome ? fixture.teams.home.winner ? 'W' : fixture.teams.away.winner ? 'L' : 'D' : fixture.teams.away.winner ? 'W' : fixture.teams.home.winner ? 'L' : 'D',
           competition: fixture.league.name,
           fixtureId: fixture.fixture.id,
           home: {
@@ -114,11 +143,9 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
             name: fixture.teams.away.name
           } as Team,
           date: fixture.fixture.date,
-        } as RecentFixture
-      }); // Get the last 5 past fixtures
-      const futureForm = teamDetail.fixtures.filter(fixture => {
-        return fixture.fixture.date && new Date(fixture.fixture.date) > today;
-      }).slice(undefined, 5).map((fixture: TeamFixtureDto) => {
+        } as RecentFixture;
+      });
+      const futureForm = teamDetail.future_fixtures.map((fixture: TeamFixtureDto) => {
         return {
           result: 'O',
           competition: fixture.league.name,
@@ -132,22 +159,15 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
             name: fixture.teams.away.name
           } as Team,
           date: fixture.fixture.date,
-        } as RecentFixture
-      });  // Get the next 5 future fixtures
+        } as RecentFixture;
+      });
       setRecentFixtures([...recentPastForm, ...futureForm])
       // get most recent one fixture
-      // const mostRecentFixture = recentPastForm.reduce((latest, current) => {
-      //   return new Date(current.date) > new Date(latest.date) ? current : latest;
-      // }, recentPastForm[0]);
-      const mostRecentFixture = teamDetail.fixtures.filter(fixture => {
-        return fixture.fixture.date && new Date(fixture.fixture.date) < today;
-      }).sort((a, b) => {
+      const mostRecentFixture = teamDetail.past_fixtures.sort((a, b) => {
         return new Date(b.fixture.date).getTime() - new Date(a.fixture.date).getTime();
       }).at(0);
       setMostRecentFixture(mostRecentFixture);
     }
-    
-    // console.log('Recent Form:', recentFixtures);
   }, [teamDetail]);
 
   // const getFormColor = (result: string) => {
@@ -169,7 +189,7 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
             <TouchableOpacity style={styles.backButton}>
               <Text style={styles.backArrow}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>{teamDetail.team.name}</Text>
+            <Text style={styles.headerTitle}>{teamDetail.team_name}</Text>
             <View style={styles.headerSpacer} />
           </View>
 
@@ -349,28 +369,28 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Squad & Management</Text>
             <View style={styles.squadGrid}>
-              {teamDetail.squad.map((player, index) => (
+              {teamDetail.current_squad.map((player, index) => (
                 <TouchableOpacity
-                  key={player.player.id ? `player-${index}`: index}
+                  key={player.id ? `player-${index}`: index}
                   style={styles.playerCard}
                   onPress={() => {
-                  navigation.navigate('PlayerDetails', { playerId: player.player.id });
+                  navigation.navigate('PlayerDetails', { playerId: player.id });
                   }}
                 >
                   <View style={styles.playerPhoto}>
-                  {!player.player.photo ? (
+                  {!player.photo ? (
                     <View style={styles.photoPlaceholder}>
                     <Text style={styles.photoText}>👤</Text>
                     </View>
                   ) : (
                     <Image
-                    source={{ uri: player.player.photo }}
+                    source={{ uri: player.photo }}
                     style={{ width: '100%', height: '100%' }}
                     resizeMode="cover"
                     />
                   )}
                   </View>
-                  <Text style={styles.playerName}>{player.player.name}</Text>
+                  <Text style={styles.playerName}>{player.name}</Text>
                   {/* <Text style={styles.playerPosition}>{player.statistics.position}</Text> */}
                 </TouchableOpacity>
               ))}

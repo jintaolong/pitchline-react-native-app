@@ -103,7 +103,7 @@ export const getFixture = async (fixtureId: number): Promise<FixtureResponseDto 
   }
 
   export const getEvents = async (fixtureId: number): Promise<EventsResponseDto | null> => {
-    fixtureId = 100;
+    // fixtureId = 100;
     try {
       log.debug(`Fetching events for fixture ID: ${fixtureId}`);
       const response = await axios.get<EventsResponseDto>(

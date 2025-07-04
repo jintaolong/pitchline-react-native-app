@@ -310,14 +310,14 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
             <View style={styles.lineupContainer}>
               <View style={styles.teamLineup}>
                 {homeLineup.map((player, index) => (
-                    <Text key={`${player.name}-${index}`} style={styles.playerText}>
+                    <Text key={`${player.number}-${index}`} style={styles.playerText}>
                     {player.number} {player.name}
                     </Text>
                 ))}
               </View>
               <View style={styles.teamLineup}>
                 {awayLineup.map((player, index) => (
-                  <Text key={`${player.name}-${index}`} style={[styles.playerText, styles.rightAlign]}>
+                  <Text key={`${player.number}-${index}`} style={[styles.playerText, styles.rightAlign]}>
                     {player.name} {player.number}
                   </Text>
                 ))}

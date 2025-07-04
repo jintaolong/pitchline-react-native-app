@@ -24,6 +24,7 @@ import { MatchEvent } from '../models/Events';
 import { MatchStatDto } from '../dtos/Stats';
 import PitchlineComparisonBarChart from '../components/ComparisonBarChart';
 import PitchlinePieChart from '../components/PieChart';
+import PitchLineTimeline from '../components/Timeline';
 
 const { width } = Dimensions.get('window');
 
@@ -72,10 +73,27 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
         console.error('Failed to fetch match lineups');
       }
     });
+
+    getFixtureStats(fixtureId).then((data: MatchStatDto | null) => {
+      if (!!data) {
+        setStats({
+          home: teamMatchStatDtoToMatchStatsDetail(data.statistics[0]),
+          away: teamMatchStatDtoToMatchStatsDetail(data.statistics[1]),
+        } as MatchStats);
+      } else {
+        log.error('Failed to fetch match stats');
+      }
+    });
+  }, [fixtureId]);
+
+  useEffect(() => {
+
     // getPostMatchStats(fixtureId).then(setStats);
     getEvents(fixtureId).then((data: EventsResponseDto | null) => {
       if(!!data){
         let events = data.events.map((event: EventDto) => {
+          log.debug("Mapping event with team id : ", event.team.id);
+          log.debug("Fixture away team id: ", fixture?.awayTeam.teamId);
           return {
             time: event.time.elapsed + (event.time.extra ? `+${event.time.extra}` : "") + "'",
             event: event.detail ? `${event.detail}${event.player ? ` (${event.player.name})` : ""}` : event.type,
@@ -96,7 +114,14 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
               : event.type === "VAR" ? "#6366F1"
               : event.type === "Corner" ? "#3B82F6"
               : event.type === "Foul" ? "#F59E0B"
-              : "#9CA3AF"
+              : "#9CA3AF",
+            player: event.player ? {
+              id: event.player.id,
+              name: event.player.name,
+              number: event.player.number || 0,
+              image: event.player.photo || undefined, // Use photo if available
+            } as LineupPlayer : undefined,
+            team: event.team ? (event.team.id === fixture?.awayTeam.teamId ? 'away' : 'home') : undefined // default as home events
           } as MatchEvent
         });
         setMatchEvents(events);
@@ -186,17 +211,7 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
       }
     });
 
-    getFixtureStats(fixtureId).then((data: MatchStatDto | null) => {
-      if (!!data) {
-        setStats({
-          home: teamMatchStatDtoToMatchStatsDetail(data.statistics[0]),
-          away: teamMatchStatDtoToMatchStatsDetail(data.statistics[1]),
-        } as MatchStats);
-      } else {
-        log.error('Failed to fetch match stats');
-      }
-    });
-  }, [fixtureId]);
+  }, [fixture])
 
   return (
     <>
@@ -356,21 +371,9 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
 
           {/* Match Timeline */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Match Timeline</Text>
-            <View style={styles.timeline}>
-              {matchEvents.map((event, index) => (
-                <View
-                  key={`${event.time}-${event.event}-${event.icon}-${event.color}-${index}`}
-                  style={styles.timelineEvent}
-                >
-                  <Text style={styles.eventTime}>{event.time}</Text>
-                  <View style={[styles.eventIcon, { backgroundColor: event.color }]}>
-                  <Text style={styles.eventIconText}>{event.icon}</Text>
-                  </View>
-                  <Text style={styles.eventDescription}>{event.event}</Text>
-                </View>
-              ))}
-            </View>
+            <PitchLineTimeline
+              matchEvents={matchEvents}
+            /> 
           </View>
 
           {/* Commentary Word Cloud */}

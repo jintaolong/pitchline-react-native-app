@@ -1,6 +1,6 @@
 // This code is a React Native component for displaying football matches.
 // It includes a calendar for selecting dates, filters for competitions, and a list of matches with details.
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,14 @@ import { getMatchLit } from '../services/matchService';
 import { FixtureResponseDto, StatusDto } from '../dtos/Fixtures';
 import log from '../utils/logger';
 
+const CALENDAR_SPAN = 60;
+
+interface ScreenCalendarDate {
+  selectedDate : Date;
+  calendarStartDate: Date;
+  calendarEndDate: Date;
+  calendarScrollIndex: number;
+}
 
 const getWeekDates = (selectedDate: Date = new Date()) => {
   // Find the Monday of the week containing selectedDate
@@ -28,11 +36,11 @@ const getWeekDates = (selectedDate: Date = new Date()) => {
 
   // Calculate the start date (2 weeks before this week's Monday)
   const startDate = new Date(startOfWeek);
-  startDate.setDate(startOfWeek.getDate() - 60);
+  startDate.setDate(startOfWeek.getDate() - CALENDAR_SPAN);
 
   // Generate 5 weeks (2 before, current, 2 after) = 35 days
   const dates = [];
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < CALENDAR_SPAN * 2; i++) {
     const date = new Date(startDate);
     date.setDate(startDate.getDate() + i);
     dates.push(date);
@@ -81,11 +89,27 @@ const formatStatus = (status: StatusDto, fixtureStartDate: string) : string => {
   return out;
 }
 
-
+const getCalendarScrollIndex = (selectedDate: Date, startDate: Date) => {
+  let timeGap = selectedDate.getTime() - startDate.getTime();
+  let calendarScrollIndex = Math.floor(timeGap / (1000 * 60 * 60 * 24)) - 7;
+  return calendarScrollIndex;
+}
 
 const FootballMatchesScreen = () => {
   const today = new Date();
-  const [selectedDate, setSelectedDate] = useState<Date>(today);
+  const weekDates = getWeekDates();
+  const [selectedDate, setSelectedDate] = useState<ScreenCalendarDate>({
+    selectedDate: today,
+    calendarStartDate: weekDates[0],
+    calendarEndDate: weekDates[weekDates.length - 1],
+    calendarScrollIndex: getCalendarScrollIndex(today, weekDates[0]),
+    // calendarScrollIndex: 10 - 2
+  });
+  log.debug(`Selected date initialized to: ${selectedDate.calendarStartDate.toLocaleDateString()}`);
+  log.debug(`Selected date initialized to: ${selectedDate.calendarEndDate.toLocaleDateString()}`);
+  // const calendarRef = useRef<Date>(today);
+  // const calendarScrollIndexRef = useRef<number>(14); // Center today in the calendar
+  // const [selectedDate, setSelectedDate] = useState<Date>(today);
   const [allFixtures, setAllFixtures] = useState<Match[]>([]);
   const [fixtures, setFixtures] = useState<Match[]>([]);
   const [selectedFilters, setSelectedFilters] = useState(['All']);
@@ -99,6 +123,9 @@ const FootballMatchesScreen = () => {
   // "competitions" is the filtered list, updated when searchText changes
   const [competitions, setCompetitions] = useState<string[]>([]);
 
+  // useEffect(() => {
+  //   calendarRef.current = new Date()
+  // });
   // Update allCompetitions when allFixtures changes
   useEffect(() => {
     const uniqueCompetitions = Array.from(
@@ -145,18 +172,17 @@ const FootballMatchesScreen = () => {
     setFixtures(filtered);
   }, [selectedFilters, allFixtures]);
 
-  const weekDates = getWeekDates();
 
   const updateAllFixtures = () => {
     let matches: Match[] = [];
-    log.debug(`Updating fixtures for date: ${selectedDate.toLocaleDateString()}`);
+    log.debug(`Updating fixtures for date: ${selectedDate.selectedDate.toLocaleDateString()}`);
     // const deltaDay = Math.ceil((selectedDate.getTime() - today.getTime()) / 1000 / 1000 / 60 /60 / 24) + 1;
     // // const deltaDay = selectedDate - today
     // log.debug(deltaDay);
     // Format selectedDate as "MMMM-MM-dd" (e.g., "June-06-10")
-    const year = selectedDate.getFullYear();
-    const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
-    const day = selectedDate.getDate().toString().padStart(2, '0');
+    const year = selectedDate.selectedDate.getFullYear();
+    const month = (selectedDate.selectedDate.getMonth() + 1).toString().padStart(2, '0');
+    const day = selectedDate.selectedDate.getDate().toString().padStart(2, '0');
     const formattedDate = `${year}-${month}-${day}`;
 
     getMatchLit(formattedDate).then(
@@ -204,10 +230,11 @@ const FootballMatchesScreen = () => {
     );
   }
   
-  useEffect(
-    updateAllFixtures, [selectedDate]
-  )
-  
+  useEffect(() => {
+    // update ref
+    updateAllFixtures();
+  }, [selectedDate]);
+
   const filteredCompetitions = competitions.filter(comp =>
     comp.toLowerCase().includes(searchText.toLowerCase())
   );
@@ -231,19 +258,29 @@ const FootballMatchesScreen = () => {
     <TouchableOpacity
       style={[
         styles.dateButton,
-        selectedDate.toDateString() === item.toDateString() && styles.selectedDateButton
+        selectedDate.selectedDate.toDateString() === item.toDateString() && styles.selectedDateButton
       ]}
-      onPress={() => setSelectedDate(item)}
+      onPress={() => {
+        // calendarRef.current = item;
+        setSelectedDate(
+          {
+            selectedDate: item,
+            calendarStartDate: weekDates[0],
+            calendarEndDate: weekDates[weekDates.length - 1],
+            calendarScrollIndex: getCalendarScrollIndex(item, weekDates[0]),
+          } as ScreenCalendarDate
+        );
+      }}
     >
       <Text style={[
         styles.dayText,
-        selectedDate.getDate() === item.getDate() && styles.selectedDateText
+        selectedDate.selectedDate.getDate() === item.getDate() && styles.selectedDateText
       ]}>
         {item.toLocaleDateString('en-US', { weekday: 'short' })}
       </Text>
       <Text style={[
         styles.dateText,
-        selectedDate.getDate() === item.getDate() && styles.selectedDateText
+        selectedDate.selectedDate.getDate() === item.getDate() && styles.selectedDateText
       ]}>
         {item.getDate()}
       </Text>
@@ -335,12 +372,12 @@ const FootballMatchesScreen = () => {
             keyExtractor={(item: Date, index: number) => item.toISOString() + '-' + index}
             renderItem={renderCalendarDate}
             pagingEnabled={false}
-            snapToAlignment="start"
+            // snapToAlignment="start"
             decelerationRate="fast"
             bounces={true}
             scrollEnabled={true}
-            extraData={selectedDate}
-            initialScrollIndex={14} // Center today (the 15th day in 0-based index of 35 days)
+            // extraData={selectedDate}
+            initialScrollIndex={selectedDate.calendarScrollIndex} // Center today
             getItemLayout={(_, index) => ({
               length: 60, // approximate width of each date button (adjust if needed)
               offset: 60 * index,
@@ -525,7 +562,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     borderRadius: 5,
     flex: 1,
-    // marginHorizontal: 2,
+    marginHorizontal: 2,
   },
   selectedDateButton: {
     backgroundColor: '#9CA3AF',
