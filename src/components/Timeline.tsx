@@ -2,54 +2,129 @@ import { View, Text, Image, StyleSheet } from "react-native";
 import { Fixture } from "../models/Fixtures";
 import { MatchEvent } from "../models/Events";
 import log from "../utils/logger";
-
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { MatchEventDetail, MatchEventType } from "../enums";
 
 const renderEventRow = (event: MatchEvent, index: number) => {
     const playerImage = event.player?.image || null;
-
+    const mainText = event.event.type === MatchEventType.VAR ? 
+      event.event.details : event.player?.name || '';
+    const supportText = event.event.type === MatchEventType.VAR ?
+      event.player?.name || '' : event.supportPlayer?.name || '' ;
+    // const mainText = event.player?.name || '';
+    // const supportText = 
+      // event.supportPlayer?.name || '' : '';
+    // log.debug("Rendering event row", { event, playerImage });
     return (
         <View
-        key={`${event.time}-${event.event}-${event.icon}-${event.color}-${index}`}
+        key={`${event.time}-${event.event}-${index}`}
         style={[
-            styles.timelineEvent,
-            { justifyContent: 'space-between', alignItems: 'center' }
+            styles.timelineEvent
         ]}
         >
         {/* Home team event description (left) */}
-        <View style={{ flex: 1, alignItems: 'flex-start' }}>
-            {event.team === 'home' && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
-                    <Text style={[styles.eventDescription, { flex: 1 }]}>{event.event}</Text>
-                    <Text style={[styles.eventTime, { width: 36, textAlign: 'right', marginRight: -10 }]}>{event.time}</Text>
-                </View>
-            )}
-        </View>
-
-        {/* Timeline middle: time, dashed line, icon or player image */}
-        <View style={{ alignItems: 'center', width: 60 }}>
-            {/* <Text style={styles.eventTime}>{event.time}</Text> */}
-            <View style={styles.eventAxis} />
-            <View style={[styles.eventIcon, { backgroundColor: event.color, alignSelf: 'center' }]}>
-            {playerImage ? (
-                <Image source={{ uri: playerImage }} style={{ width: 20, height: 20, borderRadius: 10 }} />
+                {/* Away team event description (right) */}
+          <View
+            style={{
+              flex: 1,
+              // alignItems: event.team === 'home' ? 'center' : 'flex-end',
+              // alignContent: event.team === 'home' ? 'center' : 'flex-end',
+              flexDirection: 'row-reverse',
+            }}
+          >
+            {event.team === 'home' ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+                {mainText ? (
+                    <View style={{ flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
+                    <Text style={[styles.eventDescription, { fontSize: 16 }]}>
+                      {mainText}
+                    </Text>
+                    {supportText ? (
+                      <Text style={{ fontSize: 13, color: '#9CA3AF', marginLeft: 2 }}>
+                      {supportText}
+                      </Text>
+                    ) : null}
+                    </View>
+                ) : null
+                }
+              </View>
             ) : (
-                <Text style={styles.eventIconText}>{event.icon}</Text>
+              <Text style={[styles.eventTime, { 
+                alignSelf: 'flex-end', 
+                textAlign: 'right',
+              }]}>{event.time}</Text>
             )}
-            </View>
-            <View style={styles.eventAxis} />
-        </View>
+          </View>
+          
+          {/* Event icon and axis */}
+          <View style={{ alignItems: 'center', width: 40 }}>
+              {/* <Text style={styles.eventTime}>{event.time}</Text> */}
+              <View style={styles.eventAxis} />
+              <View style={[styles.eventIcon, { alignSelf: 'center' }]}>
+              {playerImage ? (
+                <Image source={{ uri: playerImage }} style={{ width: 20, height: 20, borderRadius: 10 }} />
+              ) : (
+                <MaterialCommunityIcons
+                  name={
+                    event.event.type === MatchEventType.Goal
+                      ? "soccer"
+                      : event.event.type === MatchEventType.Card && event.event.details === MatchEventDetail.YellowCard
+                      ? "card"
+                      : event.event.type === MatchEventType.Card && event.event.details === MatchEventDetail.RedCard
+                      ? "card"
+                      : event.event.type === MatchEventType.Substitution
+                      ? "swap-horizontal"
+                      : event.event.type === MatchEventType.Penalty
+                      ? "penalty"
+                      : event.event.type === MatchEventType.Offside
+                      ? "arrow-left-right"
+                      : event.event.type === MatchEventType.VAR
+                      ? "video-check"
+                      : "alert-circle"
+                  }
+                  size={25}
+                  color={
+                    event.event.type === "Card" && event.event.details === "Yellow Card"
+                      ? "#FFD600"
+                      : event.event.type === "Card" && event.event.details === "Red Card"
+                      ? "#FF1744"
+                      : "#374151"
+                  }
+                />
+              )}
+              </View>
+              <View style={styles.eventAxis} />
+          </View>
 
-        {/* Away team event description (right) */}
-        <View style={{ flex: 1, alignItems: 'flex-end' }}>
-            {event.team === 'away' && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
-                    {/* <Text style={[styles.eventDescription, { flex: 1 }]}>{event.event}</Text> */}
-                    <Text style={[styles.eventTime, { width: 36, textAlign: 'left', marginLeft: -10}]}>{event.time}</Text>
-                    <Text style={[styles.eventDescription, { flex: 1 }]}>{event.event}</Text>
-                </View>
-            
+          <View
+            style={{
+              flex: 1,
+              // alignItems: event.team === 'away' ? 'center' : 'flex-start',
+              flexDirection: 'row',
+            }}
+          >
+            {event.team === 'away' ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+                {mainText ? (
+                    <View style={{ flexDirection: 'column', alignItems: 'flex-end', width: '100%' }}>
+                      <Text style={[styles.eventDescription, { fontSize: 16 }]}>
+                        {mainText}
+                      </Text>
+                      {supportText ? (
+                        <Text style={{ fontSize: 13, color: '#9CA3AF', marginLeft: 2 }}>
+                        {supportText}
+                        </Text>
+                      ) : null}
+                    </View>
+                ) : null
+                }
+              </View>
+            ) : (
+              <Text style={[styles.eventTime, { 
+                textAlign: 'left',
+              }]}>{event.time}</Text>
             )}
-        </View>
+          </View>
         </View>
     );
 }
@@ -79,7 +154,7 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     marginBottom: 16,
   },
-    timeline: {
+  timeline: {
     gap: 7,
   },
   timelineEvent: {
@@ -110,9 +185,9 @@ const styles = StyleSheet.create({
   },
   eventAxis: {
     width: 2,
-    height: 8,
+    height: 4, // smaller dash height
     backgroundColor: '#D1D5DB',
-    marginVertical: 2,
+    marginVertical: 1, // less vertical margin for compactness
     borderStyle: 'dashed',
     borderWidth: 1,
     borderColor: '#D1D5DB'

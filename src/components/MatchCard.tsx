@@ -1,6 +1,5 @@
 import React, { JSX } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Match } from '../models/Matches';
 import { useNavigation } from '@react-navigation/native';
 import log from '../utils/logger';

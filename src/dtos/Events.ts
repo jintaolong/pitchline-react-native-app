@@ -17,16 +17,11 @@ export interface PlayerDto {
     position?: string | null;
 }
 
-export interface AssistDto {
-    id: number | null;
-    name: string | null;
-}
-
 export interface EventDto {
     time: EventTimeDto;
     team: TeamDto;
     player: PlayerDto;
-    assist: AssistDto;
+    assist: PlayerDto;
     type: string;
     detail: string;
     comments: string | null;

@@ -92,34 +92,26 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
     getEvents(fixtureId).then((data: EventsResponseDto | null) => {
       if(!!data){
         let events = data.events.map((event: EventDto) => {
-          log.debug("Mapping event with team id : ", event.team.id);
-          log.debug("Fixture away team id: ", fixture?.awayTeam.teamId);
+          // log.debug("Processing event: ", event);
+          // log.debug("Mapping event with team id : ", event.team.id);
+          // log.debug("Fixture away team id: ", fixture?.awayTeam.teamId);
           return {
             time: event.time.elapsed + (event.time.extra ? `+${event.time.extra}` : "") + "'",
-            event: event.detail ? `${event.detail}${event.player ? ` (${event.player.name})` : ""}` : event.type,
-            icon: event.type === "Goal" ? "⚽"
-              : event.type === "Card" && event.detail === "Yellow Card" ? "🟨"
-              : event.type === "Card" && event.detail === "Red Card" ? "🟥"
-              : event.type === "Substitution" ? "🔄"
-              : event.type === "Offside" ? "🚩"
-              : event.type === "VAR" ? "🖥️"
-              : event.type === "Corner" ? "📐"
-              : event.type === "Foul" ? "⚠️"
-              : "⏱️",
-            color: event.type === "Goal" ? "#10B981"
-              : event.type === "Card" && event.detail === "Yellow Card" ? "#F59E0B"
-              : event.type === "Card" && event.detail === "Red Card" ? "#EF4444"
-              : event.type === "Substitution" ? "#3B82F6"
-              : event.type === "Offside" ? "#F59E0B"
-              : event.type === "VAR" ? "#6366F1"
-              : event.type === "Corner" ? "#3B82F6"
-              : event.type === "Foul" ? "#F59E0B"
-              : "#9CA3AF",
+            event: {
+              type: event.type || "",
+              details: event.detail || "",
+            },
             player: event.player ? {
               id: event.player.id,
               name: event.player.name,
               number: event.player.number || 0,
               image: event.player.photo || undefined, // Use photo if available
+            } as LineupPlayer : undefined,
+            supportPlayer: event.assist ? {
+              id: event.assist.id,
+              name: event.assist.name,
+              number: event.assist.number || 0,
+              image: event.assist.photo || undefined, // Use photo if available
             } as LineupPlayer : undefined,
             team: event.team ? (event.team.id === fixture?.awayTeam.teamId ? 'away' : 'home') : undefined // default as home events
           } as MatchEvent
@@ -647,35 +639,6 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: '#1F2937',
     fontWeight: '600',
-  },
-  timeline: {
-    gap: 16,
-  },
-  timelineEvent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  eventTime: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    width: 40,
-  },
-  eventIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  eventIconText: {
-    fontSize: 12,
-  },
-  eventDescription: {
-    flex: 1,
-    fontSize: 14,
-    color: '#374151',
   },
   wordCloud: {
     flexDirection: 'row',
