@@ -15,7 +15,7 @@ import PitchlineComparisonBarChart from '../components/ComparisonBarChart';
 import WDLBarChart from '../components/WDLBarChart';
 // import Slider from '@react-native-community/slider';
 import { getFixture, getMatchLineups } from '../services/matchService';
-import { LineupPlayer } from '../models/Lineups';
+import { Lineup, LineupPlayer } from '../models/Lineups';
 
 const { width } = Dimensions.get('window');
 
@@ -32,6 +32,7 @@ import ValveSelector from '../components/ValveSelector';
 import { H2HStatsDto } from '../dtos/Stats';
 import { Stats } from '../models/Stats';
 import { fixtureDtoToFixture, lineUpDtoToLineupPlayer } from '../utils/mappers';
+import PitchLineStartingXI from '../components/StartingXI';
 
 type PreMatchDetailsScreenRouteProp = RouteProp<{ params: { fixtureId: number } }, 'params'>;
 
@@ -51,8 +52,8 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
   ];
 
   // const [summaryWindow, setSummaryWindow] = useState(3); // Default: last 3 months
-  const [homeLineup, setHomeLineup] = useState<LineupPlayer[]>([]);
-  const [awayLineup, setAwayLineup] = useState<LineupPlayer[]>([]);
+  const [homeLineup, setHomeLineup] = useState<Lineup | null>(null);
+  const [awayLineup, setAwayLineup] = useState<Lineup | null>(null);
   // const homeLineup : LineupPlayer[] = [];
   // const awayLineup: LineupPlayer[] = [];
   const [fixture, setFixture] = useState<Fixture>({
@@ -205,38 +206,10 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
           awayShots: 0,
         } as Stats);
       }
-      // setStats(
-      //   data.reduce((aStat: H2HStatsDto, bStat: H2HStatsDto) => {
 
-      //   })
-      // );
     })
 
   }, [statsWindow])
-  // React.useEffect(() => {
-  //   getH2HResults()
-  // }, [fixtureId])
-  
-  // const recentForm = [
-  //   { result: 'W', color: '#10B981' },
-  //   { result: 'L', color: '#EF4444' },
-  //   { result: 'W', color: '#10B981' },
-  //   { result: 'D', color: '#F59E0B' },
-  //   { result: 'D', color: '#F59E0B' }
-  // ];
-
-  // const goalScored = [
-  //   {
-  //     key: "Man Utd",
-  //     value: 40,
-  //     svg: { fill: '#6366F1' },
-  //   },
-  //   {
-  //     key: "Arsenal",
-  //     value: 30,
-  //     svg: { fill: '#3B82F6' },
-  //   },
-  // ]
 
   const getSummaryLabel = (value: number) => {
     const found = summaryOptions.find(opt => opt.value === value);
@@ -244,8 +217,6 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
   };
 
   return (
-    <>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <SafeAreaView style={styles.container}>
         <ScrollView showsVerticalScrollIndicator={false}>
           {/* Header */}
@@ -306,23 +277,15 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
 
           {/* Starting XI */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Starting XI</Text>
-            <View style={styles.lineupContainer}>
-              <View style={styles.teamLineup}>
-                {homeLineup.map((player, index) => (
-                    <Text key={`${player.number}-${index}`} style={styles.playerText}>
-                    {player.number} {player.name}
-                    </Text>
-                ))}
-              </View>
-              <View style={styles.teamLineup}>
-                {awayLineup.map((player, index) => (
-                  <Text key={`${player.number}-${index}`} style={[styles.playerText, styles.rightAlign]}>
-                    {player.name} {player.number}
-                  </Text>
-                ))}
-              </View>
-            </View>
+            {homeLineup && awayLineup ? (
+                <PitchLineStartingXI 
+                  homeLineup={homeLineup}
+                  awayLineup={awayLineup}
+                />
+              ) : (
+                <Text>No lineups available</Text>
+              )
+            }
           </View>
 
           {/* Stats */}
@@ -336,10 +299,10 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
               {h2hResults.length > 0 ? 
                 h2hResults.map((result: H2HResults) => (
                   <H2HStats 
+                    key={result.fixtureId}
                     result={result}
                   />
-                )) :
-                (
+                )) :(
                   <Text style={{ color: '#9CA3AF', fontSize: 13, alignSelf: 'center' }}>Not found</Text>
                 )
               }
@@ -434,7 +397,6 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
           </View>
         </ScrollView>
       </SafeAreaView>
-    </>
   );
 };
 

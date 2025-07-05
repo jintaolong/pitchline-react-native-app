@@ -12,7 +12,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { getEvents, getFixture, getFixtureStats, getMatchLineups } from '../services/matchService';
-import { LineupPlayer } from '../models/Lineups';
+import { Lineup, LineupPlayer } from '../models/Lineups';
 import { Fixture } from '../models/Fixtures';
 import { MatchStats, MatchStatsDetail, Stats, WordCloudEntry } from '../models/Stats';
 import { FixtureDto, FixtureResponseDto } from '../dtos/Fixtures';
@@ -25,6 +25,7 @@ import { MatchStatDto } from '../dtos/Stats';
 import PitchlineComparisonBarChart from '../components/ComparisonBarChart';
 import PitchlinePieChart from '../components/PieChart';
 import PitchLineTimeline from '../components/Timeline';
+import PitchLineStartingXI from '../components/StartingXI';
 
 const { width } = Dimensions.get('window');
 
@@ -45,8 +46,8 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
   const [activeTab, setActiveTab] = useState('Live');
 
   const [fixture, setFixture] = useState<Fixture | null>(null);
-  const [homeLineup, setHomeLineup] = useState<LineupPlayer[]>([]);
-  const [awayLineup, setAwayLineup] = useState<LineupPlayer[]>([]);
+  const [homeLineup, setHomeLineup] = useState<Lineup | null>(null);
+  const [awayLineup, setAwayLineup] = useState<Lineup | null>(null);
   const [stats, setStats] = useState<MatchStats | null>(null);
   const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
   const [wordCloudWords, setWordCloudWords] = useState<WordCloudEntry[]>([]);
@@ -387,30 +388,19 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
           </View>
 
           {/* Starting XI */}
-          <View style={styles.section}>
+          {/* <View style={styles.section}>
             <Text style={styles.sectionTitle}>Starting XI</Text>
-            <View style={styles.lineupContainer}>
-              <View style={styles.teamLineup}>
-                {homeLineup.map((player, index) => (
-                    <Text
-                    key={`${player.name}-${player.number}-${index}`}
-                    style={styles.playerText}
-                    >
-                    {player.number} {player.name}
-                    </Text>
-                ))}
-              </View>
-              <View style={styles.teamLineup}>
-                {awayLineup.map((player, index) => (
-                    <Text
-                    key={`${player.name}-${player.number}-${index}`}
-                    style={[styles.playerText, styles.rightAlign]}
-                    >
-                    {player.name} {player.number}
-                    </Text>
-                ))}
-              </View>
-            </View>
+          </View> */}
+          <View style={styles.section}>
+          {homeLineup && awayLineup ? (
+              <PitchLineStartingXI 
+                homeLineup={homeLineup}
+                awayLineup={awayLineup}
+              />
+            ) : (
+              <Text>No lineups available</Text>
+            )
+          }
           </View>
 
           {/* Standings */}
