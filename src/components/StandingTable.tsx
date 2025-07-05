@@ -3,7 +3,23 @@ import { StyleSheet } from "react-native";
 import { View, Text, Image } from "react-native";
 import { Standing } from "../models/Leagues";
 
-const PitchLineStandingTable = ({ standings, teamId }: { standings: Standing[], teamId: number }) => {
+const PitchLineStandingTable = ({ standings, teamId, teamAwayId, neighbour }: { standings: Standing[], teamId: number | undefined, teamAwayId?: number | undefined, neighbour? : number | undefined }) => {
+    // if teamAwayId present, filter standings to only include two teams home and away
+    if (teamAwayId && standings.length > 0) {
+        standings = standings.filter(team => team.team.id === teamId || team.team.id === teamAwayId);
+    }
+    // get team position
+    let teamPos : number;
+    if (teamId) {
+        const team = standings.find(team => team.team.id === teamId);
+        teamPos = team ? team.position : 0;
+    } else {
+        teamPos = 0;
+    }
+    // if neighbour is present, filter standings to only include teams with position within 2 of neighbour
+    if (neighbour && standings.length > 0) {
+        standings = standings.filter(team => Math.abs(team.position - teamPos) <= neighbour);
+    }
     return (
         <View style={styles.standingsTable}>
             {standings.map((team: Standing, index: number) => (

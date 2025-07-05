@@ -22,7 +22,7 @@ const { width } = Dimensions.get('window');
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import log from '../utils/logger';
 import { LineupsResponseDto } from '../dtos/Lineups';
-import { getH2HResults, getH2HStats } from '../services/teamService';
+import { getH2HResults, getH2HStats, getLeagueStanding } from '../services/teamService';
 import { FixtureResponseDto } from '../dtos/Fixtures';
 import { Fixture, Team, Venue } from '../models/Fixtures';
 import { MatchDto, ResultsDto } from '../dtos/Results';
@@ -31,8 +31,10 @@ import H2HStats from '../components/H2HStats';
 import ValveSelector from '../components/ValveSelector';
 import { H2HStatsDto } from '../dtos/Stats';
 import { Stats } from '../models/Stats';
-import { fixtureDtoToFixture, lineUpDtoToLineupPlayer } from '../utils/mappers';
+import { fixtureDtoToFixture, leagueStandingDtoToLeague, lineUpDtoToLineupPlayer } from '../utils/mappers';
 import PitchLineStartingXI from '../components/StartingXI';
+import PitchLineStandingTable from '../components/StandingTable';
+import { Standing } from '../models/Leagues';
 
 type PreMatchDetailsScreenRouteProp = RouteProp<{ params: { fixtureId: number } }, 'params'>;
 
@@ -57,7 +59,11 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
   // const homeLineup : LineupPlayer[] = [];
   // const awayLineup: LineupPlayer[] = [];
   const [fixture, setFixture] = useState<Fixture>({
-    league: '',
+    league: {
+      id: 0,
+      name: '',
+      logoUrl: ''
+    },
     kickoffDate: '',
     kickoffTime: '',
     venue: {
@@ -75,6 +81,7 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
       logoUrl: '',
     } as Team
   });
+  const [standing, setStanding] = useState<Standing[]>([]);
 
   React.useEffect(() => {
     getFixture(fixtureId).then((data: FixtureResponseDto | null) => {
@@ -129,7 +136,35 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
     }
   );
   }, [fixtureId]);
-  
+
+  React.useEffect(() => {
+if(fixture){
+    log.debug(`PostMatch: Fetching league standings for fixture: ${fixture.league.id} in year ${new Date().getFullYear()}`);
+      getLeagueStanding(fixture.league.id, new Date().getFullYear()).then((data: LeagueStandingDto | null) => {
+      if(!!data){
+        let league = leagueStandingDtoToLeague(data) || null;
+        league 
+          && league.currentStandings 
+          && league.currentStandings.length > 0 
+          && league.currentStandings.filter((standing: Standing[], index) => {
+            let leagueName = `Unknown League ${index + 1}`;
+            if (standing.length > 0) {
+              leagueName = standing[0].group;
+              if (leagueName === 'Domestic League') {
+                return true;
+              }
+            }
+        });
+        if (league && league.currentStandings.length > 0) {
+          setStanding(
+            league.currentStandings[0] || []
+          )
+        }
+      }
+    });
+    }
+  }, [fixture])
+
   const [statsWindow, setStatsWindow] = useState(1);
 
   const [stats, setStats] = useState<Stats>({
@@ -224,7 +259,7 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
             <TouchableOpacity style={styles.backButton}>
               <Text style={styles.backArrow}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>{fixture.league}</Text>
+            <Text style={styles.headerTitle}>{fixture.league.name}</Text>
             <View style={styles.headerSpacer} />
           </View>
 
@@ -372,28 +407,11 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
           {/* Standings */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Standings</Text>
-            <View style={styles.standingsContainer}>
-              <View style={styles.standingRow}>
-                <Text style={styles.position}>6</Text>
-                <View style={[styles.teamLogo, styles.arsenalLogo, styles.smallLogo]}>
-                  <Text style={styles.smallLogoText}>A</Text>
-                </View>
-                <Text style={styles.standingTeam}>Arsenal</Text>
-                <Text style={styles.standingGames}>15</Text>
-                <Text style={styles.standingDiff}>+14</Text>
-                <Text style={styles.standingPoints}>56</Text>
-              </View>
-              <View style={styles.standingRow}>
-                <Text style={styles.position}>11</Text>
-                <View style={[styles.teamLogo, styles.smallLogo]}>
-                  <Text style={styles.smallLogoText}>MU</Text>
-                </View>
-                <Text style={styles.standingTeam}>Man Utd</Text>
-                <Text style={styles.standingGames}>15</Text>
-                <Text style={styles.standingDiff}>-2</Text>
-                <Text style={styles.standingPoints}>44</Text>
-              </View>
-            </View>
+            <PitchLineStandingTable 
+              standings={standing}
+              teamId={fixture?.homeTeam.teamId || undefined}
+              teamAwayId={fixture?.awayTeam.teamId || undefined}
+            />
           </View>
         </ScrollView>
       </SafeAreaView>

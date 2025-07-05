@@ -1,5 +1,11 @@
+export interface League {
+    id: number;
+    name: string;
+    logoUrl: string;
+}
+
 export interface Fixture{
-    league: string;
+    league: League;
     kickoffDate: string;
     kickoffTime: string;
     venue: Venue;

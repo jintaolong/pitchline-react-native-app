@@ -1,16 +1,24 @@
 import { FixtureResponseDto } from "../dtos/Fixtures";
+import { LeagueStandingDto, TeamStandingDto } from "../dtos/Leagues";
 import { LineupDto } from "../dtos/Lineups";
 import { TeamMatchStatDto } from "../dtos/Stats";
 import { MatchStatType } from "../enums";
-import { Fixture, FixtureGoals, Team, Venue } from "../models/Fixtures";
+import { Fixture, FixtureGoals, Team, Venue, League as FixtureLeague } from "../models/Fixtures";
+import { Standing } from "../models/Leagues";
 import { Lineup, LineupPlayer, LineupPlayerGrid } from "../models/Lineups";
 import { MatchStatsDetail } from "../models/Stats";
+import {League} from "../models/Leagues";
+
 import log from "./logger";
 
 export const fixtureDtoToFixture = (data: FixtureResponseDto) => {
     const kickoffDateObj = new Date(data.fixture.fixture.date);
     return {
-        league: data.fixture.league.name,
+        league: {
+            id: data.fixture.league.id,
+            name: data.fixture.league.name,
+            logoUrl: ''
+        } as FixtureLeague,
         kickoffDate: kickoffDateObj.toLocaleDateString('en-GB', {
         weekday: 'short',
         day: '2-digit',
@@ -99,4 +107,33 @@ export const teamMatchStatDtoToMatchStatsDetail = (data: TeamMatchStatDto) => {
         shotsOffGoal: data.statistics.find(stat => stat.type.toLowerCase() === MatchStatType.ShotsOffGoal)?.value || 0,
         totalShots: data.statistics.find(stat => stat.type.toLowerCase() === MatchStatType.TotalShots)?.value || 0,
     } as MatchStatsDetail
+}
+
+
+export const leagueStandingDtoToLeague = (data: LeagueStandingDto) => {
+    return {
+        id: data.league.id,
+        name: data.league.name,
+        // logoUrl: data.league.logo,
+        country: data.league.country,
+        logo: data.league.logo,
+        flag: data.league.flag,
+        // season: data.season,
+        currentSeason: data.season,
+        currentStandings: data.standings.map((standingGroup: TeamStandingDto[]) => {
+        return standingGroup.map((standing: TeamStandingDto) => {
+            return {
+            position: standing.rank,
+            team: {
+                id: standing.team.id,
+                name: standing.team.name,
+                logo: standing.team.logo,
+            },
+            group: standing.group,
+            points: standing.points,
+            form: standing.form.split(''),
+            } as Standing;
+        });
+        }),
+    } as League;
 }

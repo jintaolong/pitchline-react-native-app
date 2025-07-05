@@ -17,7 +17,7 @@ import { Fixture } from '../models/Fixtures';
 import { MatchStats, MatchStatsDetail, Stats, WordCloudEntry } from '../models/Stats';
 import { FixtureDto, FixtureResponseDto } from '../dtos/Fixtures';
 import log from '../utils/logger';
-import { fixtureDtoToFixture, lineUpDtoToLineupPlayer, teamMatchStatDtoToMatchStatsDetail } from '../utils/mappers';
+import { fixtureDtoToFixture, lineUpDtoToLineupPlayer, teamMatchStatDtoToMatchStatsDetail, leagueStandingDtoToLeague } from '../utils/mappers';
 import { LineupsResponseDto } from '../dtos/Lineups';
 import { EventDto, EventsResponseDto } from '../dtos/Events';
 import { MatchEvent } from '../models/Events';
@@ -26,6 +26,10 @@ import PitchlineComparisonBarChart from '../components/ComparisonBarChart';
 import PitchlinePieChart from '../components/PieChart';
 import PitchLineTimeline from '../components/Timeline';
 import PitchLineStartingXI from '../components/StartingXI';
+import PitchLineStandingTable from '../components/StandingTable';
+import { getLeagueStanding } from '../services/teamService';
+import { LeagueStandingDto } from '../dtos/Leagues';
+import { League, Standing } from '../models/Leagues';
 
 const { width } = Dimensions.get('window');
 
@@ -46,6 +50,7 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
   const [activeTab, setActiveTab] = useState('Live');
 
   const [fixture, setFixture] = useState<Fixture | null>(null);
+  const [standing, setStanding] = useState<Standing[]>([]);
   const [homeLineup, setHomeLineup] = useState<Lineup | null>(null);
   const [awayLineup, setAwayLineup] = useState<Lineup | null>(null);
   const [stats, setStats] = useState<MatchStats | null>(null);
@@ -204,6 +209,31 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
       }
     });
 
+    if(fixture){
+      log.debug(`PostMatch: Fetching league standings for fixture: ${fixture.league.id} in year ${new Date().getFullYear()}`);
+      getLeagueStanding(fixture.league.id, new Date().getFullYear()).then((data: LeagueStandingDto | null) => {
+      if(!!data){
+        let league = leagueStandingDtoToLeague(data) || null;
+        league 
+          && league.currentStandings 
+          && league.currentStandings.length > 0 
+          && league.currentStandings.filter((standing: Standing[], index) => {
+            let leagueName =  `Unknown League ${index + 1}`;
+            if (standing.length > 0){
+              leagueName = standing[0].group;
+              if (leagueName === 'Domestic League') {
+                return true;
+              }
+            }
+        });
+        if (league && league.currentStandings.length > 0) {
+          setStanding(
+            league.currentStandings[0] || []
+          )
+        }
+      }
+    });
+    }
   }, [fixture])
 
   return (
@@ -216,7 +246,7 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
             <TouchableOpacity style={styles.backButton}>
               <Text style={styles.backArrow}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>{fixture?.league}</Text>
+            <Text style={styles.headerTitle}>{fixture?.league.name}</Text>
             <View style={styles.headerSpacer} />
           </View>
 
@@ -225,16 +255,24 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
             <Text style={styles.matchDate}>{fixture?.kickoffDate}</Text>
             <View style={styles.scoreContainer}>
               <View style={styles.teamSection}>
-                <View style={styles.teamLogo}>
+                <TouchableOpacity
+                  onPress={() => {
+                  if (fixture?.homeTeam.teamId) {
+                    navigation.navigate('TeamDetails', { teamId: fixture.homeTeam.teamId });
+                  }
+                  }}
+                  style={styles.teamLogo}
+                  activeOpacity={0.7}
+                >
                   {fixture?.homeTeam.logoUrl ? (
-                    <Image
-                      source={{ uri: fixture.homeTeam.logoUrl }}
-                      style={{ width: 32, height: 32, resizeMode: 'contain' }}
-                    />
+                  <Image
+                    source={{ uri: fixture.homeTeam.logoUrl }}
+                    style={{ width: 32, height: 32, resizeMode: 'contain' }}
+                  />
                   ) : (
-                    <Text style={styles.logoText}>{fixture?.homeTeam.short}</Text>
+                  <Text style={styles.logoText}>{fixture?.homeTeam.short}</Text>
                   )}
-                </View>
+                </TouchableOpacity>
                 <Text style={[styles.teamName, { textAlign: 'center' }]}>{fixture?.homeTeam.name}</Text>
               </View>
               
@@ -253,7 +291,15 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
               </View>
               
               <View style={styles.teamSection}>
-                <View style={styles.teamLogo}>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (fixture?.awayTeam.teamId) {
+                      navigation.navigate('TeamDetails', { teamId: fixture.awayTeam.teamId });
+                    }
+                  }}
+                  style={styles.teamLogo}
+                  activeOpacity={0.7}
+                >
                   {fixture?.awayTeam.logoUrl ? (
                     <Image
                       source={{ uri: fixture.awayTeam.logoUrl }}
@@ -262,7 +308,7 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
                   ) : (
                     <Text style={styles.logoText}>{fixture?.awayTeam.short}</Text>
                   )}
-                </View>
+                </TouchableOpacity>
                 <Text style={[styles.teamName, { textAlign: 'center' }]}>{fixture?.awayTeam.name}</Text>
               </View>
             </View>
@@ -406,28 +452,12 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
           {/* Standings */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Standings</Text>
-            <View style={styles.standingsContainer}>
-              <View style={styles.standingRow}>
-                <Text style={styles.position}>6</Text>
-                <View style={[styles.teamLogo, styles.awayLogo, styles.smallLogo]}>
-                  <Text style={styles.smallLogoText}>A</Text>
-                </View>
-                <Text style={styles.standingTeam}>Arsenal</Text>
-                <Text style={styles.standingGames}>15</Text>
-                <Text style={styles.standingDiff}>+14</Text>
-                <Text style={styles.standingPoints}>56</Text>
-              </View>
-              <View style={styles.standingRow}>
-                <Text style={styles.position}>11</Text>
-                <View style={[styles.teamLogo, styles.smallLogo]}>
-                  <Text style={styles.smallLogoText}>MU</Text>
-                </View>
-                <Text style={styles.standingTeam}>Man Utd</Text>
-                <Text style={styles.standingGames}>15</Text>
-                <Text style={styles.standingDiff}>-2</Text>
-                <Text style={styles.standingPoints}>44</Text>
-              </View>
-            </View>
+            <PitchLineStandingTable 
+              standings={standing}
+              teamId={fixture?.homeTeam.teamId || undefined}
+              teamAwayId={fixture?.awayTeam.teamId || undefined}
+            />
+           
           </View>
         </ScrollView>
       </SafeAreaView>

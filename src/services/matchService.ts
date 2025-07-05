@@ -23,8 +23,16 @@ export const getMatchLit = async (searchDate: string): Promise<FixtureResponseDt
         log.error(`Error fetching match list: ${response.statusText}`);
         return [];
     }
-    // TOOD: remove max 50 cap
-    const resp = response.data.slice(0, 50).map((item: any) => {
+    // TOOD: remove max 1000 cap
+    const resp = response.data
+      .sort(
+        (a: FixtureResponseDto, b: FixtureResponseDto) => {
+          // const dateA = new Date(a.fixture.date);
+          // const dateB = new Date(b.fixture.date);
+            return a.league_id - b.league_id;
+        }
+      )
+      .slice(0, 30).map((item: any) => {
       return item as FixtureResponseDto;
     });
     log.debug(`Successfully fetched ${resp.length} matches`);

@@ -17,6 +17,8 @@ import { LeagueStandingDto, TeamStandingDto } from '../dtos/Leagues';
 import { RecentFixture, Team } from '../models/Teams';
 import { League, Standing } from '../models/Leagues';
 import PitchLineStandingTable from '../components/StandingTable';
+import { leagueStandingDtoToLeague } from '../utils/mappers';
+import log from '../utils/logger';
 
 const { width } = Dimensions.get('window');
 
@@ -30,15 +32,6 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
     _id: 'dummy_id',
     team_id: 1,
     team_name: 'Dummy Team',
-    team: {
-      id: 1,
-      name: 'Dummy Team',
-      code: 'DT',
-      country: 'Nowhere',
-      founded: 1900,
-      national: false,
-      logo: '',
-    },
     coach: {
       id: 1,
       name: 'Dummy Coach',
@@ -84,7 +77,8 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
     past_fixtures: [],
     future_fixtures: [],
   });
-  const [teamLeagues, setTeamLeagues] = useState<League | null>(null);
+  const [teamLeague, setTeamLeague] = useState<League | null>(null);
+  const [teamLeagues, setTeamLeagues] = useState<League[]>([]);
   const [mostRecentFixture, setMostRecentFixture] = useState<TeamFixtureDto | undefined>(undefined);
   useEffect(() => {
     getTeamDetails(teamId).then((data: TeamDto | null) => {
@@ -96,40 +90,15 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
 
   const [recentFixtures, setRecentFixtures] = useState<RecentFixture[]>([]);
   useEffect(() => {
-    // update standing
-    getLeagueStanding(teamDetail.team_id, new Date().getFullYear()).then((data: LeagueStandingDto | null) => {
-      if(!!data){
-        setTeamLeagues({
-          id: data.league.id,
-          name: data.league.name,
-          country: data.league.country,
-          logo: data.league.logo,
-          flag: data.league.flag,
-          season: data.season,
-          currentSeason: data.season,
-          currentStandings: data.standings.map((standingGroup: TeamStandingDto[]) => {
-            return standingGroup.map((standing: TeamStandingDto) => {
-              return {
-                position: standing.rank,
-                team: {
-                  id: standing.team.id,
-                  name: standing.team.name,
-                  logo: standing.team.logo,
-                },
-                group: standing.group,
-                points: standing.points,
-                form: standing.form.split(''),
-              } as Standing;
-            });
-          }),
-        } as League);
-      }
-    });
+    let leagueIds :number[] = [];
     // update recent form
     if (teamDetail && teamDetail.past_fixtures.length > 0) {
       const today = new Date();
       const recentPastForm = teamDetail.past_fixtures.map((fixture: TeamFixtureDto) => {
         let isHome = fixture.teams.home.id === teamDetail.team_id;
+        if (fixture.league && fixture.league.id && !leagueIds.includes(fixture.league.id)) {
+          leagueIds.push(fixture.league.id);
+        }
         return {
           result: isHome ? fixture.teams.home.winner ? 'W' : fixture.teams.away.winner ? 'L' : 'D' : fixture.teams.away.winner ? 'W' : fixture.teams.home.winner ? 'L' : 'D',
           competition: fixture.league.name,
@@ -146,6 +115,9 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
         } as RecentFixture;
       });
       const futureForm = teamDetail.future_fixtures.map((fixture: TeamFixtureDto) => {
+        if (fixture.league && fixture.league.id && !leagueIds.includes(fixture.league.id)) {
+          leagueIds.push(fixture.league.id);
+        }
         return {
           result: 'O',
           competition: fixture.league.name,
@@ -167,8 +139,47 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
         return new Date(b.fixture.date).getTime() - new Date(a.fixture.date).getTime();
       }).at(0);
       setMostRecentFixture(mostRecentFixture);
+      // update standing
+      log.debug(`Fetching leagues: ${leagueIds.length} leagues`);
+      log.debug(`League IDs: ${leagueIds.join(', ')}`);
+      if (leagueIds.length > 0) {
+        // getLeagueStanding(leagueIds[0], new Date().getFullYear()).then((data: LeagueStandingDto | null) => {
+        //     if(!!data){
+        //       log.debug(`TeamDetails: League standings fetched for league ID: ${leagueIds[0]}`);
+        //       let league = leagueStandingDtoToLeague(data);
+        //       setTeamLeague(league);
+        //     }
+        //   });
+        leagueIds.map((leagueId) => {
+          getLeagueStanding(leagueId, new Date().getFullYear()).then((data: LeagueStandingDto | null) => {
+            if(!!data){
+              log.debug(`TeamDetails: League standings fetched for league ID: ${leagueId}`);
+              let league = leagueStandingDtoToLeague(data);
+              setTeamLeagues(prevLeagues => [...prevLeagues, league]);
+            }
+          });
+        });
+      }
+      // leagueIds.forEach((leagueId: number) => {
+      //   getLeagueStanding(leagueId, new Date().getFullYear()).then((data: LeagueStandingDto | null) => {
+      //     if(!!data){
+      //       log.debug(`TeamDetails: League standings fetched for league ID: ${leagueId}`);
+      //       let league = leagueStandingDtoToLeague(data);
+      //       setTeamLeagues([...teamLeagues, league]);
+      //     }
+      //   });
+      // });
+      // log.debug(`League standings fetched: ${teamLeagues.length} leagues`);      
     }
   }, [teamDetail]);
+
+  useEffect(() => {
+    log.debug(`Team leagues updated: ${teamLeagues.length} leagues`);
+    if (teamLeagues.length > 0) {
+      // set active league to the first one
+      setActiveLeague(teamLeagues[0].currentStandings[0][0].group || 'Domestic League');
+    }
+  }, [teamLeagues]);
 
   // const getFormColor = (result: string) => {
   //   switch (result) {
@@ -315,14 +326,21 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
             <Text style={styles.sectionTitle}>League Standings</Text>
             
             {/* League Tabs */}
-            <View style={styles.leagueTabs}>
-              {teamLeagues 
-                && teamLeagues.currentStandings 
-                && teamLeagues.currentStandings.length > 0 
-                && teamLeagues.currentStandings.map((standing: Standing[], index) => {
-                  let leagueName =  `Unknown League ${index + 1}`;
-                  if (standing.length > 0){
-                    leagueName = standing[0].group;
+            {
+              teamLeagues.length === 0 ? (
+                <Text style={{textAlign: 'center', color: '#9CA3AF'}}>No league standings available</Text>
+              ) : 
+              <View style={styles.leagueTabs}>
+              {teamLeagues.map((league, index) => {
+                if (!league || !league.currentStandings || league.currentStandings.length === 0) {
+                  log.debug(`League: ${index + 1} has no current standings`);
+                  return null; // Skip rendering if no standings are available
+                }
+                log.debug(`League: ${league.name}, Current Standings: ${league.currentStandings.length}`);
+                let leagueName = `Unknown League ${index + 1}`;
+                  if (league.currentStandings.length > 0 && league.currentStandings[0][0].group) {
+                    // leagueName = league.currentStandings[0][0].team.name;
+                    leagueName = league.currentStandings[0][0].group;
                     if (leagueName === 'Domestic League') {
                       setActiveLeague('Domestic League');
                     }
@@ -330,7 +348,7 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
                   return (
                       <TouchableOpacity
                       key={`${leagueName}-${index}`}
-                      style={[styles.leagueTab, (activeLeague === leagueName || teamLeagues.currentStandings.length === 1) && styles.activeLeagueTab]}
+                      style={[styles.leagueTab, (activeLeague === leagueName || teamLeagues.length === 1) && styles.activeLeagueTab]}
                       onPress={() => setActiveLeague(leagueName)}
                       >
                       <Text style={[styles.leagueTabText, activeLeague === leagueName && styles.activeLeagueTabText]}>
@@ -340,19 +358,26 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
                   )
               })}
             </View>
-
-            {/* Standings Table */}
-            {teamLeagues && teamLeagues.currentStandings && teamLeagues.currentStandings.length > 0 &&
-              teamLeagues.currentStandings.map((standing: Standing[], index) => {
-              const groupName = standing.length > 0 ? standing[0].group : `group-${index}`;
-              return (
-                <PitchLineStandingTable
-                key={`${groupName}-${index}`}
-                standings={standing}
-                teamId={teamId}
-                />
-              );
-              })}
+            }
+            <View style={styles.section}>
+              {/* Standings Table */}
+              {!!teamLeagues && teamLeagues.length > 0 &&
+                teamLeagues.map((league, index) => {
+                  const groupName = league.currentStandings.length > 0 ? league.currentStandings[0][0].group : `group-${index}`;
+                  return (
+                    activeLeague === groupName &&
+                      <View style={{marginBottom: 20}} key={`league-standings-${index}`}>
+                        <PitchLineStandingTable
+                          key={`${groupName}-${index}`}
+                          standings={league.currentStandings[0]} // assuming the first element of current standing is the one
+                          // TODO: clarify!!!!
+                          teamId={teamId}
+                          neighbour={2} // show only teams within 2 positions of the current team
+                        />
+                      </View>
+                  );
+                })}
+          </View>
           </View>
 
           {/* Club Ranking */}

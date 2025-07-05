@@ -8,8 +8,8 @@ import { LeagueStandingDto } from "../dtos/Leagues";
 
 export const getH2HResults = async (homeId: number, awayId: number): Promise<ResultsDto | null> => {
     log.debug(`Fetching H2H results for ${homeId} vs ${awayId}`);
-    homeId = 1;
-    awayId = 2;
+    // homeId = 1;
+    // awayId = 2;
     try {
         const response = await axios.get<ResultsDto[]>(
             `https://plapi.mynetworkplace.com/h2hfull?id1=${homeId}&id2=${awayId}`,
@@ -35,8 +35,8 @@ export const getH2HResults = async (homeId: number, awayId: number): Promise<Res
 }
 
 export const getH2HStats = async (homeId: number, awayId: number, window: number): Promise<H2HStatsDto[]> => {
-    homeId = 33;
-    awayId = 42;
+    // homeId = 33;
+    // awayId = 42;
     // window = 24;
     log.debug(`Fetching H2H stats for ${homeId} vs ${awayId} in past ${window} months`);
     log.debug(`Pinging:: https://plapi.mynetworkplace.com/h2hstats?id1=${homeId}&id2=${awayId}&year=${Math.round(window / 12)}`);
@@ -62,7 +62,7 @@ export const getH2HStats = async (homeId: number, awayId: number, window: number
 
 
 export const getTeamDetails = async (teamId: number): Promise<TeamDto | null> => {
-    teamId = 59;
+    // teamId = 59;
     log.debug(`Fetching details for team ${teamId}`);
     try {
         const response = await axios.get<TeamDto>(
@@ -86,8 +86,8 @@ export const getTeamDetails = async (teamId: number): Promise<TeamDto | null> =>
 
 
 export const getLeagueStanding = async (leagueId: number, season: number): Promise<LeagueStandingDto | null> => {
-    // leagueId = 242;
-    season -= 1;
+    // leagueId = 50;
+    // season -= 1;
     log.debug(`Fetching standing for league ${leagueId} in season ${season}`);
     try {
         const response = await axios.get<any>(

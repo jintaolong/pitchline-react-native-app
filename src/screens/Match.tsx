@@ -351,7 +351,7 @@ const FootballMatchesScreen = () => {
       <ScrollView
         style={styles.content}
         onScroll={({ nativeEvent }) => {
-          if (nativeEvent.contentOffset.y <= 0) {
+        if (nativeEvent.contentOffset.y <= -10) {
         // At the top of the scroll view
         // Trigger your function here
         console.log('Scrolled to top');
