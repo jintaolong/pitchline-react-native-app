@@ -30,6 +30,7 @@ import PitchLineStandingTable from '../components/StandingTable';
 import { getLeagueStanding } from '../services/teamService';
 import { LeagueStandingDto } from '../dtos/Leagues';
 import { League, Standing } from '../models/Leagues';
+import { globalStyles } from '../styles/globalStyles';
 
 const { width } = Dimensions.get('window');
 
@@ -58,6 +59,7 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
   const [wordCloudWords, setWordCloudWords] = useState<WordCloudEntry[]>([]);
 
   useEffect(() => {
+    setStanding([]); // Reset standing when fixtureId changes
     getFixture(fixtureId).then((data: FixtureResponseDto | null) => {
       log.debug(`Got data: ${data}`);
       if (!!data){
@@ -456,8 +458,15 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
               standings={standing}
               teamId={fixture?.homeTeam.teamId || undefined}
               teamAwayId={fixture?.awayTeam.teamId || undefined}
+              onPress={(id: number) => {
+                navigation.navigate('TeamDetails', { teamId : id });
+              }}
             />
-           
+            <Text style={globalStyles.footNotes}>
+              Last updated: {standing && standing.length > 0 && standing[0].lastUpdated
+                ? standing[0].lastUpdated
+                : 'N/A'}
+            </Text>
           </View>
         </ScrollView>
       </SafeAreaView>

@@ -35,6 +35,8 @@ import { fixtureDtoToFixture, leagueStandingDtoToLeague, lineUpDtoToLineupPlayer
 import PitchLineStartingXI from '../components/StartingXI';
 import PitchLineStandingTable from '../components/StandingTable';
 import { Standing } from '../models/Leagues';
+import { LeagueStandingDto } from '../dtos/Leagues';
+import { globalStyles } from '../styles/globalStyles';
 
 type PreMatchDetailsScreenRouteProp = RouteProp<{ params: { fixtureId: number } }, 'params'>;
 
@@ -84,6 +86,7 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
   const [standing, setStanding] = useState<Standing[]>([]);
 
   React.useEffect(() => {
+    setStanding([]); // Reset standing when fixtureId changes
     getFixture(fixtureId).then((data: FixtureResponseDto | null) => {
       if (!!data){
         log.debug(`Got fixture with id ${fixtureId} as following`);
@@ -411,7 +414,15 @@ if(fixture){
               standings={standing}
               teamId={fixture?.homeTeam.teamId || undefined}
               teamAwayId={fixture?.awayTeam.teamId || undefined}
+              onPress={(id: number) => {
+                navigation.navigate('TeamDetails', { teamId : id });
+              }}
             />
+            <Text style={globalStyles.footNotes}>
+              Last updated: {standing && standing.length > 0 && standing[0].lastUpdated
+                ? standing[0].lastUpdated
+                : 'N/A'}
+            </Text>
           </View>
         </ScrollView>
       </SafeAreaView>

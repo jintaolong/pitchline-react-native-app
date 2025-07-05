@@ -3,7 +3,15 @@ import { StyleSheet } from "react-native";
 import { View, Text, Image } from "react-native";
 import { Standing } from "../models/Leagues";
 
-const PitchLineStandingTable = ({ standings, teamId, teamAwayId, neighbour }: { standings: Standing[], teamId: number | undefined, teamAwayId?: number | undefined, neighbour? : number | undefined }) => {
+interface PitchLineStandingTableProps {
+  standings: Standing[];
+  teamId: number | undefined;
+  teamAwayId?: number | undefined;
+  neighbour?: number | undefined;
+  onPress: (teamId: number) => void;
+}
+
+const PitchLineStandingTable = ({ standings, teamId, teamAwayId, neighbour, onPress }: PitchLineStandingTableProps) => {
     // if teamAwayId present, filter standings to only include two teams home and away
     if (teamAwayId && standings.length > 0) {
         standings = standings.filter(team => team.team.id === teamId || team.team.id === teamAwayId);
@@ -23,28 +31,32 @@ const PitchLineStandingTable = ({ standings, teamId, teamAwayId, neighbour }: { 
     return (
         <View style={styles.standingsTable}>
             {standings.map((team: Standing, index: number) => (
-                <View key={`${team.team.id}-${team.position}`} style={styles.standingRow}>
+                <View
+                  key={`${team.team.id}-${team.position}`}
+                  style={styles.standingRow}
+                  onTouchEnd={() => onPress(team.team.id)}
+                >
                   <View style={[styles.positionBadge, team.team.id === teamId &&  styles.currentTeamBadge]}>
-                    <Text style={[styles.positionText, team.team.id === teamId && styles.currentTeamText]}>
-                      {team.position}
-                    </Text>
-                </View>
-                <View style={styles.teamLogo}>
+                  <Text style={[styles.positionText, team.team.id === teamId && styles.currentTeamText]}>
+                    {team.position}
+                  </Text>
+                  </View>
+                  <View style={styles.teamLogo}>
                   {team.team.logo ? (
                     <Image
-                      source={{ uri: team.team.logo }}
-                      style={{ width: 28, height: 28, borderRadius: 14 }}
-                      resizeMode="contain"
+                    source={{ uri: team.team.logo }}
+                    style={{ width: 28, height: 28, borderRadius: 14 }}
+                    resizeMode="contain"
                     />
                   ) : (
                     <Text style={styles.logoText}>{team.team.name.charAt(0)}</Text>
                   )}
-                </View>
-                <Text style={[styles.standingTeamName, team.team.id === teamId && styles.currentTeamName]}>
+                  </View>
+                  <Text style={[styles.standingTeamName, team.team.id === teamId && styles.currentTeamName]}>
                   {team.team.name}
-                </Text>
-                <Text style={styles.standingPoints}>{team.points}</Text>
-                <View style={styles.formDots}>
+                  </Text>
+                  <Text style={styles.standingPoints}>{team.points}</Text>
+                  <View style={styles.formDots}>
                   {team.form.map((result, formIndex) => (
                     <View
                     key={`${team.team.id}-${formIndex}`}
@@ -60,8 +72,8 @@ const PitchLineStandingTable = ({ standings, teamId, teamAwayId, neighbour }: { 
                     ]}
                     />
                   ))}
+                  </View>
                 </View>
-              </View>
             ))}
         </View>
 

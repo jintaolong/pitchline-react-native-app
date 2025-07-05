@@ -3,7 +3,7 @@ import { PlayerDataDto } from "../dtos/Players";
 import log from "../utils/logger";
 
 export const getPlayerDetail = async (playerId: number): Promise<PlayerDataDto | null> => {
-    playerId = 629;
+    // playerId = 629;
     log.debug(`Fetching player details for player ID: ${playerId}`);
     try {
         const response = await axios.get(

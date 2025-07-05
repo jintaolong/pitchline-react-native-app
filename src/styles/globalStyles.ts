@@ -45,5 +45,11 @@ export const globalStyles = StyleSheet.create({
         color: '#222',
         marginBottom: 4,
     },
+    footNotes: { 
+        fontSize: 10, 
+        color: '#6B7280', 
+        textAlign: 'right', 
+        marginTop: 8 
+    },
 });
 

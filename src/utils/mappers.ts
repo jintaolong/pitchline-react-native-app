@@ -111,29 +111,40 @@ export const teamMatchStatDtoToMatchStatsDetail = (data: TeamMatchStatDto) => {
 
 
 export const leagueStandingDtoToLeague = (data: LeagueStandingDto) => {
+    // Find the most recent update timestamp from all standings
+    const allUpdates = data.standings.flatMap((group: TeamStandingDto[]) =>
+        group.map((standing: TeamStandingDto) => standing.update)
+    ).filter(Boolean);
+
+    const lastUpdated = allUpdates.length > 0
+        ? allUpdates.reduce((latest, curr) => (curr && latest && curr > latest ? curr : latest), allUpdates[0])
+        : 'unknown';
+
     return {
         id: data.league.id,
         name: data.league.name,
-        // logoUrl: data.league.logo,
         country: data.league.country,
         logo: data.league.logo,
         flag: data.league.flag,
-        // season: data.season,
         currentSeason: data.season,
         currentStandings: data.standings.map((standingGroup: TeamStandingDto[]) => {
-        return standingGroup.map((standing: TeamStandingDto) => {
-            return {
-            position: standing.rank,
-            team: {
-                id: standing.team.id,
-                name: standing.team.name,
-                logo: standing.team.logo,
-            },
-            group: standing.group,
-            points: standing.points,
-            form: standing.form.split(''),
-            } as Standing;
-        });
+            return standingGroup.map((standing: TeamStandingDto) => {
+                return {
+                    position: standing.rank,
+                    team: {
+                        id: standing.team.id,
+                        name: standing.team.name,
+                        logo: standing.team.logo,
+                    },
+                    group: standing.group,
+                    points: standing.points,
+                    form: standing.form.split(''),
+                    lastUpdated: standing.update
+                        ? new Date(standing.update).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })
+                        : 'unknown',
+                } as Standing;
+            });
         }),
+        lastUpdated: new Date(lastUpdated).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
     } as League;
 }

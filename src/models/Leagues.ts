@@ -6,6 +6,7 @@ export interface Standing{
     team: Team;
     points: number;
     form: string[];
+    lastUpdated?: string;
 }
 
 export interface League{
@@ -16,4 +17,5 @@ export interface League{
     flag: string;
     currentSeason: number;
     currentStandings: Standing[][];
+    lastUpdated?: string;
 }

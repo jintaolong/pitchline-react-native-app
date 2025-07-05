@@ -19,6 +19,7 @@ import { League, Standing } from '../models/Leagues';
 import PitchLineStandingTable from '../components/StandingTable';
 import { leagueStandingDtoToLeague } from '../utils/mappers';
 import log from '../utils/logger';
+import { globalStyles } from '../styles/globalStyles';
 
 const { width } = Dimensions.get('window');
 
@@ -86,6 +87,7 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
         setTeamDetail(data);
       }
     });
+    setTeamLeagues([]); // reset leagues when teamId changes
   }, [teamId]);
 
   const [recentFixtures, setRecentFixtures] = useState<RecentFixture[]>([]);
@@ -373,10 +375,18 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
                           // TODO: clarify!!!!
                           teamId={teamId}
                           neighbour={2} // show only teams within 2 positions of the current team
+                          onPress={(id: number) => {
+                            navigation.navigate('TeamDetails', { teamId : id });
+                          }}
                         />
                       </View>
                   );
                 })}
+                <Text style={globalStyles.footNotes}>
+                  Last updated: {teamLeagues.length > 0 && teamLeagues[0].lastUpdated
+                    ? teamLeagues[0].lastUpdated
+                    : 'N/A'}
+                </Text>
           </View>
           </View>
 
