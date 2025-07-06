@@ -391,14 +391,54 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
           </View>
 
           {/* Club Ranking */}
-          <View style={styles.section}>
+          {/* <View style={styles.section}>
             <Text style={styles.sectionTitle}>Club Ranking</Text>
             <View style={styles.rankingCard}>
               <Text style={styles.rankingLabel}>UEFA Ranking</Text>
               <Text style={styles.rankingNumber}>#2</Text>
               <Text style={styles.rankingSubtext}>Club Coefficients</Text>
             </View>
-          </View>
+          </View> */}
+
+          {/* Coach Info */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Coach</Text>
+            {
+              teamDetail && teamDetail.coach ?
+                (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                    <View style={{ width: 60, height: 60, borderRadius: 30, overflow: 'hidden', backgroundColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' }}>
+                      {teamDetail.coach.photo ? (
+                        <Image
+                          source={{ uri: teamDetail.coach.photo }}
+                          style={{ width: 60, height: 60, borderRadius: 30 }}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <Text style={{ fontSize: 32 }}>👔</Text>
+                      )}
+                    </View>
+                    <View>
+                      <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1F2937' }}>
+                        {teamDetail.coach.name}
+                      </Text>
+                      <Text style={{ fontSize: 14, color: '#6B7280' }}>
+                        {teamDetail.coach.nationality}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: '#9CA3AF' }}>
+                        Age: {teamDetail.coach.age}
+                      </Text>
+                    </View>
+                  </View>    
+                ) : (
+                  <View style={styles.largePlayerCard}>
+                    <Text style={{ fontSize: 16, color: '#9CA3AF' }}>No coach information available</Text>
+                  </View>
+                )
+              }
+            </View>
+
+
 
           {/* Squad & Management */}
           <View style={styles.section}>
