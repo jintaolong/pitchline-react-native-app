@@ -315,6 +315,7 @@ if(fixture){
 
           {/* Starting XI */}
           <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Starting XI</Text>
             {homeLineup && awayLineup ? (
                 <PitchLineStartingXI 
                   homeLineup={homeLineup}

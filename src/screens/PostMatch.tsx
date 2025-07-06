@@ -395,7 +395,7 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
           </View>
 
           {/* Timeline Tabs */}
-          <View style={styles.tabContainer}>
+          {/* <View style={styles.tabContainer}>
             <TouchableOpacity 
               style={[styles.tab, activeTab === 'Live' && styles.activeTab]}
               onPress={() => setActiveTab('Live')}
@@ -408,10 +408,11 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
             >
               <Text style={[styles.tabText, activeTab === 'Density' && styles.activeTabText]}>Density</Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
 
           {/* Match Timeline */}
           <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Match Timeline</Text>
             <PitchLineTimeline
               matchEvents={matchEvents}
             /> 
@@ -440,6 +441,7 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
             <Text style={styles.sectionTitle}>Starting XI</Text>
           </View> */}
           <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Starting XI</Text>
           {homeLineup && awayLineup ? (
               <PitchLineStartingXI 
                 homeLineup={homeLineup}

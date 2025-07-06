@@ -201,7 +201,6 @@ const PitchLineStartingXI = ({homeLineup, awayLineup}: {homeLineup: Lineup; away
   }
   return (
     <View>
-        <Text style={globalStyles.title}>Starting XI</Text>
         <View
             style={{
             width: '100%',

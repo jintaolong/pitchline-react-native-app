@@ -45,6 +45,15 @@ export interface PlayerInfo{
 // }
 
 export interface PlayerStats{
+    games: {
+        appearences: number;
+        lineups: number;
+        minutes: number;
+        number: number | null;
+        position: string;
+        rating: number | null;
+        captain: boolean;
+    }
     substitutes: {
         in: number;
         out: number;

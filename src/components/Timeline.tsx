@@ -134,7 +134,6 @@ const PitchLineTimeline = ({matchEvents}: {matchEvents: MatchEvent[]}) => {
 
   return (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Match Timeline</Text>
             <View style={styles.timeline}>
               {matchEvents.map((event, index) => renderEventRow(event, index))}
             </View>
