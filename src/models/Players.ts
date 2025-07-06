@@ -13,6 +13,13 @@ export interface PlayerLeague{
     season: number;
 }
 
+export interface PlayerRating{
+    season: number | string;
+    league: PlayerLeague;
+    overall: number;
+    potential?: number;
+}
+
 export interface PlayerInfo{
     name: string;
     age: number;
@@ -28,12 +35,59 @@ export interface PlayerInfo{
     };
     teams: PlayerTeam[];
     leagues: PlayerLeague[];
+    footballAPRating: PlayerRating;
+    // footballAPRating?: number | string; // Assuming this is a number, adjust if needed
 }
 
 // export interface PlayerCareerPeriod{
 //     start: string;
 //     end: string;
 // }
+
+export interface PlayerStats{
+    substitutes: {
+        in: number;
+        out: number;
+        bench: number;
+    };
+    shots: {
+        total: number | null;
+        on: number | null;
+    };
+    goals: {
+        total: number | null;
+        assists: number | null;
+    };
+    passes: {
+        total: number | null;
+        key: number | null;
+    };
+    tackles: {
+        total: number | null;
+        successful: number | null;
+    };
+    duels: {
+        total: number | null;
+        won: number | null;
+    };
+    dribbles: {
+        total: number | null;
+        successful: number | null;
+    };
+    fouls: {
+        total: number | null;
+        committed: number | null;
+    };
+    cards: {
+        yellow: number | null;
+        red: number | null;
+    };
+    penalty: {
+        won: number | null;
+        scored: number | null;
+        missed: number | null;
+    };
+}
 
 export interface PlayerCareer {
     team: PlayerTeam;
@@ -58,6 +112,7 @@ export interface Player {
     // team: PlayerTeam;
     careerTimeline?: PlayerCareer[];
     achievements?: PlayerAchievement[];
+    stats: PlayerStats;
     // radarAttributes: {
     //     attribute: string;
     //     value: number;

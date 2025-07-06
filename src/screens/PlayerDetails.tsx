@@ -10,34 +10,20 @@ import {
   StatusBar,
   Dimensions,
 } from 'react-native';
-import { Player, PlayerCareer, PlayerInfo, PlayerLeague, PlayerTeam } from '../models/Players';
+import { Player, PlayerCareer, PlayerInfo, PlayerLeague, PlayerStats, PlayerTeam } from '../models/Players';
 import { getPlayerDetail } from '../services/playerService';
 import { PlayerDataDto } from '../dtos/Players';
 import { Team } from '../models/Teams';
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { mockPlayer } from '../utils/mocks';
+import { useState } from 'react';
+import PitchLinePlayerStats from '../components/PlayerStats';
 
 const { width } = Dimensions.get('window');
 
 const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
 
-  const [player, setPlayer] = React.useState<Player>({
-    info: {
-      name: '',
-      age: 0,
-      position: '',
-      nationality: '',
-      height: '',
-      weight: '',
-      photo: '',
-      birth: {
-        date: '',
-        place: '',
-        country: ''
-      },
-      teams: [],
-      leagues: [],
-    },
-    careerTimeline: [] as PlayerCareer[],
-  });
+  const [player, setPlayer] = React.useState<Player>(mockPlayer());
 
   useEffect(() => {
     getPlayerDetail(playerId).then((data: PlayerDataDto | null) => {
@@ -47,7 +33,9 @@ const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
         let currentLeagues: PlayerLeague[] = [];
         let playerCareer: PlayerCareer[] = [];
         data.statistics
-          .filter(stat => stat.league.season === new Date().getFullYear())
+          .sort((a, b) => b.league.season - a.league.season)
+          .slice(0, 1)
+          // .filter(stat => stat.league.season === new Date().getFullYear())
           .forEach(stat => {
             if (!currentTeams.some(team => team.id === stat.team.id)) {
               currentTeams.push(stat.team as PlayerTeam);
@@ -95,11 +83,15 @@ const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
               });
             }
           });
+        // Get the most recent statistics record
+        const mostRecentStat = data.statistics
+          .sort((a, b) => b.league.season - a.league.season)[0];
+
         setPlayer({
           info: {
             name: data.player.name,
             age: data.player.age,
-            // position: data.player.position,
+            position: mostRecentStat?.games?.position || 'Unknown',
             nationality: data.player.nationality,
             height: data.player.height,
             weight: data.player.weight,
@@ -111,44 +103,89 @@ const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
             },
             teams: currentTeams,
             leagues: currentLeagues,
+            footballAPRating: {
+              overall: 6,
+              potential: 6,
+              season: new Date().getFullYear(),
+            },
           } as PlayerInfo,
           careerTimeline: playerCareer as PlayerCareer[],
-          // achievements: data.player.achievements.map(achievement => ({
-          //   title: achievement.title,
-          //   type: achievement.type,
-          //   description: achievement.description,
-          //   icon: achievement.icon,
-          //   color: achievement.color,
-          //   count: achievement.count,
-          //   subtitle: achievement.subtitle
-          // })),
-          // radarAttributes: data.player.radarAttributes.map(attribute => ({
-          //   attribute: attribute.attribute,
-          //   value: attribute.value
-          // }))
+          stats: {
+            games: {
+              appearences: mostRecentStat?.games?.appearences ?? 0,
+              lineups: mostRecentStat?.games?.lineups ?? 0,
+              minutes: mostRecentStat?.games?.minutes ?? 0,
+              number: mostRecentStat?.games?.number ?? null,
+              position: mostRecentStat?.games?.position ?? 'Unknown',
+              rating: mostRecentStat?.games?.rating ?? null,
+              captain: mostRecentStat?.games?.captain ?? false,
+            },
+            substitutes: {
+              in: mostRecentStat?.substitutes?.in ?? null,
+              out: mostRecentStat?.substitutes?.out ?? null,
+              bench: mostRecentStat?.substitutes?.bench ?? null,
+            },
+            shots: {
+              total: mostRecentStat?.shots?.total ?? null,
+              on: mostRecentStat?.shots?.on ?? null,
+            },
+            goals: {
+              total: mostRecentStat?.goals?.total ?? null,
+              assists: mostRecentStat?.goals?.assists ?? null,
+            },
+            passes: {
+              total: mostRecentStat?.passes?.total ?? null,
+              key: mostRecentStat?.passes?.key ?? null,
+            },
+            tackles: {
+              total: mostRecentStat?.tackles?.total ?? null,
+              successful: mostRecentStat?.tackles?.blocks ?? null,
+            },
+            duels: {
+              total: mostRecentStat?.duels?.total ?? null,
+              won: mostRecentStat?.duels?.won ?? null,
+            },
+            dribbles: {
+              total: mostRecentStat?.dribbles?.attempts ?? null,
+              successful: mostRecentStat?.dribbles?.success ?? null,
+            },
+            fouls: {
+              total: mostRecentStat?.fouls?.drawn ?? null,
+              committed: mostRecentStat?.fouls?.committed ?? null,
+            },
+            cards: {
+              yellow: mostRecentStat?.cards?.yellow ?? null,
+              red: mostRecentStat?.cards?.red ?? null,
+            },
+            penalty: {
+              won: mostRecentStat?.penalty?.won ?? null,
+              scored: mostRecentStat?.penalty?.scored ?? null,
+              missed: mostRecentStat?.penalty?.missed ?? null,
+            },
+          } as PlayerStats,
         } as Player);
         
       }
     });
   }, [playerId]);
 
-  const achievements = [
-    { title: 'Ballon d\'Or', icon: '🏆', color: '#F59E0B', count: null },
-    { title: 'The Best FIFA Men\'s Player', icon: '🥇', color: '#3B82F6', count: 'x2' },
-    { title: 'FIFA World Cup', subtitle: '2022', icon: '🏆', color: '#10B981', count: null },
-    { title: 'Champions League', icon: '🏆', color: '#8B5CF6', count: 'x4' },
-    { title: 'La Liga Title', icon: '🛡️', color: '#EF4444', count: 'x10' },
-    { title: 'European Golden Shoe', icon: '👟', color: '#F59E0B', count: 'x6' }
-  ];
+  // const achievements = [
+  //   { title: 'Ballon d\'Or', icon: '🏆', color: '#F59E0B', count: null },
+  //   { title: 'The Best FIFA Men\'s Player', icon: '🥇', color: '#3B82F6', count: 'x2' },
+  //   { title: 'FIFA World Cup', subtitle: '2022', icon: '🏆', color: '#10B981', count: null },
+  //   { title: 'Champions League', icon: '🏆', color: '#8B5CF6', count: 'x4' },
+  //   { title: 'La Liga Title', icon: '🛡️', color: '#EF4444', count: 'x10' },
+  //   { title: 'European Golden Shoe', icon: '👟', color: '#F59E0B', count: 'x6' }
+  // ];
 
-  const radarData = [
-    { attribute: 'Pace', value: 85 },
-    { attribute: 'Shooting', value: 95 },
-    { attribute: 'Checking', value: 90 },
-    { attribute: 'Dribbling', value: 98 },
-    { attribute: 'Defending', value: 40 },
-    { attribute: 'Physical', value: 75 }
-  ];
+  // const radarData = [
+  //   { attribute: 'Pace', value: 85 },
+  //   { attribute: 'Shooting', value: 95 },
+  //   { attribute: 'Checking', value: 90 },
+  //   { attribute: 'Dribbling', value: 98 },
+  //   { attribute: 'Defending', value: 40 },
+  //   { attribute: 'Physical', value: 75 }
+  // ];
 
   return (
     <>
@@ -186,10 +223,19 @@ const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
               <Text style={styles.playerPosition}>{player.info.position}</Text>
               <View style={styles.teamInfo}>
                 <View style={styles.teamLogo}>
-                  <Text style={styles.teamLogoText}>{
-                  player.info.teams.length > 0 
-                  && !!player.info.teams[0].name 
-                    ? player.info.teams[0].name : ''}</Text>
+                  {player.info.teams.length > 0 && player.info.teams[0].logo ? (
+                    <Image
+                      source={{ uri: player.info.teams[0].logo }}
+                      style={{ width: 20, height: 20, borderRadius: 10 }}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Text style={styles.teamLogoText}>
+                      {player.info.teams.length > 0 && player.info.teams[0].name
+                        ? player.info.teams[0].name[0]
+                        : ''}
+                    </Text>
+                  )}
                 </View>
                 <Text style={styles.teamName}>{
                   player.info.teams.length > 0 
@@ -197,14 +243,14 @@ const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
                     ? player.info.teams[0].name : ''}</Text>
               </View>
               <View style={styles.ratingsContainer}>
-                <View style={styles.ratingBadge}>
-                  <Text style={styles.ratingLabel}>Overall</Text>
-                  <Text style={styles.ratingValue}>?</Text>
-                </View>
-                <View style={styles.ratingBadge}>
+                {/* <View style={styles.ratingBadge}>
+                  <Text style={styles.ratingLabel}>Football API rating for season {player.info.footballAPRating?.season || new Date().getFullYear()}</Text>
+                  <Text style={styles.ratingValue}>{player.info.footballAPRating?.overall || 'N/A'}</Text>
+                </View> */}
+                {/* <View style={styles.ratingBadge}>
                   <Text style={styles.ratingLabel}>Potential</Text>
-                  <Text style={styles.ratingValue}>?</Text>
-                </View>
+                  <Text style={styles.ratingValue}>{player.info.footballAPRating}</Text>
+                </View> */}
               </View>
             </View>
           </View>
@@ -213,25 +259,69 @@ const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Player Information</Text>
             <View style={styles.infoGrid}>
-                {[
-                { icon: '🏳️', label: 'Nationality', value: player.info.nationality },
-                { icon: '📅', label: 'Date of Birth', value: player.info.birth.date },
-                { icon: '#', label: 'Age', value: player.info.age?.toString() },
-                { icon: '🦶', label: 'Position', value: player.info.position },
-                { icon: '📏', label: 'Height', value: player.info.height },
-                { icon: '⚖️', label: 'Weight', value: player.info.weight },
-                { icon: '🌍', label: 'Birth Place', value: player.info.birth.place },
-                { icon: '🏠', label: 'Birth Country', value: player.info.birth.country },
-                { icon: '🏟️', label: 'Current Team', value: player.info.teams[0]?.name || '' },
-                ].map((info, index) => (
-                <View key={index} style={styles.infoRow}>
+                <View style={styles.infoRow}>
                   <View style={styles.infoLeft}>
-                  <Text style={styles.infoIcon}>{info.icon}</Text>
-                  <Text style={styles.infoLabel}>{info.label}</Text>
+                    <MaterialCommunityIcons name="flag-outline" size={16} color="#000" style={{ paddingRight: 8 }} />
+                    <Text style={styles.infoLabel}>Nationality</Text>
                   </View>
-                  <Text style={styles.infoValue}>{info.value}</Text>
+                  <Text style={styles.infoValue}>{player.info.nationality}</Text>
                 </View>
-                ))}
+                <View style={styles.infoRow}>
+                  <View style={styles.infoLeft}>
+                    <MaterialCommunityIcons name="calendar-range" size={16} color="#000" style={{ paddingRight: 8 }} />
+                    <Text style={styles.infoLabel}>Date of Birth</Text>
+                  </View>
+                  <Text style={styles.infoValue}>{player.info.birth.date}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <View style={styles.infoLeft}>
+                    <MaterialCommunityIcons name="numeric" size={16} color="#000" style={{ paddingRight: 8 }} />
+                    <Text style={styles.infoLabel}>Age</Text>
+                  </View>
+                  <Text style={styles.infoValue}>{player.info.age?.toString()}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <View style={styles.infoLeft}>
+                    <MaterialCommunityIcons name="soccer" size={16} color="#000" style={{ paddingRight: 8 }} />
+                    <Text style={styles.infoLabel}>Position</Text>
+                  </View>
+                  <Text style={styles.infoValue}>{player.info.position}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <View style={styles.infoLeft}>
+                    <MaterialCommunityIcons name="human-male-height" size={16} color="#000" style={{ paddingRight: 8 }} />
+                    <Text style={styles.infoLabel}>Height</Text>
+                  </View>
+                  <Text style={styles.infoValue}>{player.info.height}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <View style={styles.infoLeft}>
+                    <MaterialCommunityIcons name="weight-kilogram" size={16} color="#000" style={{ paddingRight: 8 }} />
+                    <Text style={styles.infoLabel}>Weight</Text>
+                  </View>
+                  <Text style={styles.infoValue}>{player.info.weight}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <View style={styles.infoLeft}>
+                    <MaterialCommunityIcons name="map-marker-outline" size={16} color="#000" style={{ paddingRight: 8 }} />
+                    <Text style={styles.infoLabel}>Birth Place</Text>
+                  </View>
+                  <Text style={styles.infoValue}>{player.info.birth.place}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <View style={styles.infoLeft}>
+                    <MaterialCommunityIcons name="earth" size={16} color="#000" style={{ paddingRight: 8 }} />
+                    <Text style={styles.infoLabel}>Birth Country</Text>
+                  </View>
+                  <Text style={styles.infoValue}>{player.info.birth.country}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <View style={styles.infoLeft}>
+                    <MaterialCommunityIcons name="home-group" size={16} color="#000" style={{ paddingRight: 8 }} />
+                    <Text style={styles.infoLabel}>Current Team</Text>
+                  </View>
+                  <Text style={styles.infoValue}>{player.info.teams[0]?.name || ''}</Text>
+                </View>
             </View>
           </View>
 
@@ -268,10 +358,18 @@ const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
             </View>
           </View>
 
+          
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Player Stats</Text>
+            <PitchLinePlayerStats player={player} />
+          </View>
           {/* Achievements */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Achievements</Text>
-            <View style={styles.achievementsGrid}>
+            <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+              <Text style={{ fontSize: 12, color: '#6B7280' }}>Not Available</Text>
+            </View>
+            {/* <View style={styles.achievementsGrid}>
               {achievements.map((achievement, index) => (
                 <View key={index} style={[styles.achievementCard, { backgroundColor: achievement.color + '20' }]}>
                   <Text style={styles.achievementIcon}>{achievement.icon}</Text>
@@ -284,15 +382,13 @@ const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
                   )}
                 </View>
               ))}
-            </View>
+            </View> */}
           </View>
-
           {/* Strengths & Weaknesses */}
-          <View style={styles.section}>
+          {/* <View style={styles.section}>
             <Text style={styles.sectionTitle}>Strengths & Weaknesses</Text>
             <View style={styles.radarContainer}>
               <View style={styles.radarChart}>
-                {/* Simplified radar chart representation */}
                 <View style={styles.radarCenter}>
                   <View style={styles.radarPolygon} />
                 </View>
@@ -309,7 +405,9 @@ const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
                 </View>
               </View>
             </View>
-          </View>
+          </View> */}
+
+
         </ScrollView>
       </SafeAreaView>
     </>
