@@ -5,18 +5,19 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   SafeAreaView,
   Modal,
   TextInput,
   FlatList,
   SectionList,
+  Animated,
+  ScrollView
 } from 'react-native';
 import MatchCard from '../components/MatchCard';
 import { Match } from '../models/Matches';
 import { getMatchLit } from '../services/matchService';
-import { FixtureResponseDto, StatusDto } from '../dtos/Fixtures';
+import { FixtureResponseDto } from '../dtos/Fixtures';
 import log from '../utils/logger';
 
 const CALENDAR_SPAN = 60;
@@ -84,6 +85,9 @@ const FootballMatchesScreen = () => {
   const [searchText, setSearchText] = useState('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
+  // Animated value for filter container height
+  const filterAnim = useRef(new Animated.Value(1)).current; // 1 = expanded, 0 = collapsed
+
   // Update filtered fixtures when filters or allFixtures change
   useEffect(() => {
     log.debug(`Selected filters: ${selectedFilters.join(', ')}`);
@@ -110,11 +114,7 @@ const FootballMatchesScreen = () => {
 
 
   const updateAllFixtures = () => {
-    let matches: Match[] = [];
     log.debug(`Updating fixtures for date: ${selectedDate.selectedDate.toLocaleDateString()}`);
-    // const deltaDay = Math.ceil((selectedDate.getTime() - today.getTime()) / 1000 / 1000 / 60 /60 / 24) + 1;
-    // // const deltaDay = selectedDate - today
-    // log.debug(deltaDay);
     // Format selectedDate as "MMMM-MM-dd" (e.g., "June-06-10")
     const year = selectedDate.selectedDate.getFullYear();
     const month = (selectedDate.selectedDate.getMonth() + 1).toString().padStart(2, '0');
@@ -184,6 +184,18 @@ const FootballMatchesScreen = () => {
   const filteredGroups = selectedGroups.filter(groupId =>
     allGroupedFixtures[groupId].name.toLowerCase().includes(searchText.toLowerCase())
   );
+  
+  // const handleMatchlistScroll = Animated.event(
+  //   [{ nativeEvent: { contentOffset: { y: filterAnim } } }],
+  //   { useNativeDriver: false }
+  // );
+  
+  // Interpolate height or scale
+  // const filterHeight = filterAnim.interpolate({
+  //   inputRange: [0, 1], // adjust 100 to how much scroll you want for full collapse
+  //   outputRange: [70, 0], // 70 = expanded height, 0 = collapsed
+  //   extrapolate: 'clamp',
+  // });
 
   const toggleFilter = (filter: { name: string; id: number }) => {
     log.debug(`Toggling filter: ${filter}`);
@@ -323,89 +335,49 @@ const FootballMatchesScreen = () => {
         </View>
 
         {/* Filters */}
-        <View style={styles.filtersContainer}>
-          <Text style={styles.filtersTitle}>Filters</Text>
-          
-          <View style={styles.filterButtons}>
-            <TouchableOpacity
-              style={[
-          styles.filterButton,
-          selectedFilters.find(f => f.name === 'All') && styles.activeFilterButton
-              ]}
-              onPress={() => toggleFilter({ name: 'All', id: 0 })}
-            >
-              <Text style={[
-          styles.filterButtonText,
-          selectedFilters.find(f => f.name === 'All') && styles.activeFilterButtonText
-              ]}>
-          All
+        <Animated.View style={[styles.filtersContainer, { height: 70, overflow: 'hidden' }]}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={[styles.filterButtons, { flexDirection: 'row', flexWrap: 'wrap' }]}>
+              <TouchableOpacity
+                style={[
+            styles.filterButton,
+            selectedFilters.find(f => f.name === 'All') && styles.activeFilterButton
+                ]}
+                onPress={() => toggleFilter({ name: 'All', id: 0 })}
+              >
+                <Text style={[
+            styles.filterButtonText,
+            selectedFilters.find(f => f.name === 'All') && styles.activeFilterButtonText
+                ]}>
+            All
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.filterButton}
+                onPress={() => setShowCompetitionModal(true)}
+              >
+                <Text style={styles.filterButtonText}>Competition ▼</Text>
+              </TouchableOpacity>
+              
+            {/* Show selected filters as separate buttons */}
+              {selectedFilters
+                .filter(f => f.name !== 'All') // Optionally hide "All" from the selected list
+                .map(filter => (
+              <TouchableOpacity
+              key={filter.id}
+              style={[styles.filterButton, styles.activeFilterButton]}
+              onPress={() => toggleFilter(filter)}
+              >
+              <Text style={[styles.filterButtonText, styles.activeFilterButtonText]}>
+                {filter.name} ✕
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-          styles.filterButton,
-          selectedFilters.find(f => f.name === 'Women') && styles.activeFilterButton
-              ]}
-              onPress={() => toggleFilter({ name: 'Women', id: 1 })}
-            >
-              <Text style={[
-          styles.filterButtonText,
-          selectedFilters.find(f => f.name === 'Women') && styles.activeFilterButtonText
-              ]}>
-          Women
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.filterButton}
-              onPress={() => setShowCompetitionModal(true)}
-            >
-              <Text style={styles.filterButtonText}>Competition ▼</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[
-          styles.filterButton,
-          selectedFilters.find(f => f.name === 'Live Chat') && styles.activeFilterButton
-              ]}
-              onPress={() => toggleFilter({ name: 'Live Chat', id: 2 })}
-            >
-              <Text style={[
-          styles.filterButtonText,
-          selectedFilters.find(f => f.name === 'Live Chat') && styles.activeFilterButtonText
-              ]}>
-          Live Chat
-              </Text>
-            </TouchableOpacity>
-          </View>
+              </TouchableOpacity>
+                ))}
+            </View>
 
-          {/* Show selected filters as separate buttons */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 }}>
-            {selectedFilters
-              .filter(f => f.name !== 'All') // Optionally hide "All" from the selected list
-              .map(filter => (
-            <TouchableOpacity
-            key={filter.id}
-            style={[styles.filterButton, styles.activeFilterButton, { marginRight: 8, marginBottom: 8 }]}
-            onPress={() => toggleFilter(filter)}
-            >
-            <Text style={[styles.filterButtonText, styles.activeFilterButtonText]}>
-              {filter.name} ✕
-            </Text>
-            </TouchableOpacity>
-              ))}
-          </View>
-          
-          <TouchableOpacity
-            style={styles.advancedFiltersButton}
-            onPress={() => setShowAdvancedFilters(!showAdvancedFilters)}
-          >
-            <Text style={styles.advancedFiltersText}>Advanced Filters</Text>
-            <Text style={styles.advancedFiltersIcon}>
-              {showAdvancedFilters ? '▲' : '▼'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+          </ScrollView>
+        </Animated.View>
 
         {/* Matches List */}
     <SectionList
@@ -418,6 +390,7 @@ const FootballMatchesScreen = () => {
         <Text style={{ fontWeight: '500', fontSize: 13, color: '#666', marginLeft: 20, marginTop: 20, marginBottom: 8 }}>{title}</Text>
       )}
       renderItem={renderMatch}
+      // onScroll={handleMatchlistScroll}
     />
 
       {renderCompetitionModal()}
@@ -525,8 +498,8 @@ const styles = StyleSheet.create({
   // },
   filtersContainer: {
     backgroundColor: 'white',
-    margin: 15,
-    padding: 20,
+    // margin: 15,
+    padding: 15,
     borderRadius: 5,
     borderWidth: 1,
     borderColor: '#e0e0e0',
@@ -534,21 +507,21 @@ const styles = StyleSheet.create({
   filtersTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 15,
+    // marginBottom: 15,
   },
   filterButtons: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 15,
+    // marginBottom: 15,
   },
   filterButton: {
     paddingHorizontal: 15,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e0e0e0',
     marginRight: 10,
-    marginBottom: 10,
+    // marginBottom: 10,
   },
   activeFilterButton: {
     backgroundColor: '#6B73FF',
