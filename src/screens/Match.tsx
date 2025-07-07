@@ -398,6 +398,8 @@ const FootballMatchesScreen = () => {
   );
 };
 
+const PRIMARY_COLOR = '#6B73FF';
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -432,12 +434,12 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#6B73FF',
+    backgroundColor: PRIMARY_COLOR,
   },
   content: {
     flex: 1,
   },
-    calendar: {
+  calendar: {
     backgroundColor: 'white',
     paddingVertical: 10,
     paddingHorizontal: 15,
@@ -453,9 +455,13 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     flex: 1,
     marginHorizontal: 2,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    backgroundColor: 'transparent',
   },
   selectedDateButton: {
-    backgroundColor: '#9CA3AF',
+    borderColor: PRIMARY_COLOR,
+    backgroundColor: 'transparent',
   },
   dayText: {
     fontSize: 12,
@@ -467,35 +473,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   selectedDateText: {
-    color: 'white',
+    color: PRIMARY_COLOR,
   },
-  // calendar: {
-  //   backgroundColor: 'white',
-  //   paddingVertical: 20,
-
-  // },
-  // dateButton: {
-  //   alignItems: 'center',
-  //   paddingHorizontal: 20,
-  //   paddingVertical: 10,
-  //   marginHorizontal: 5,
-  //   borderRadius: 8,
-  // },
-  // selectedDateButton: {
-  //   backgroundColor: '#9CA3AF',
-  // },
-  // dayText: {
-  //   fontSize: 12,
-  //   color: '#666',
-  //   marginBottom: 5,
-  // },
-  // dateText: {
-  //   fontSize: 16,
-  //   fontWeight: 'bold',
-  // },
-  // selectedDateText: {
-  //   color: 'white',
-  // },
+  triangleCorner: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 0,
+    borderRightWidth: 12,
+    borderBottomWidth: 12,
+    borderStyle: 'solid',
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: PRIMARY_COLOR,
+    backgroundColor: 'transparent',
+    zIndex: 10,
+  },
   filtersContainer: {
     backgroundColor: 'white',
     // margin: 15,
@@ -524,8 +519,8 @@ const styles = StyleSheet.create({
     // marginBottom: 10,
   },
   activeFilterButton: {
-    backgroundColor: '#6B73FF',
-    borderColor: '#6B73FF',
+    backgroundColor: PRIMARY_COLOR,
+    borderColor: PRIMARY_COLOR,
   },
   filterButtonText: {
     color: '#666',
@@ -598,7 +593,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#6B73FF',
+    backgroundColor: PRIMARY_COLOR,
     marginRight: 8,
   },
   teamName: {
@@ -614,7 +609,7 @@ const styles = StyleSheet.create({
   scoreText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#6B73FF',
+    color: PRIMARY_COLOR,
     minWidth: 20,
     textAlign: 'center',
   },
@@ -622,7 +617,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginHorizontal: 5,
-    color: '#6B73FF',
+    color: PRIMARY_COLOR,
   },
   matchFooter: {
     flexDirection: 'row',
@@ -674,7 +669,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   modalDoneButton: {
-    color: '#6B73FF',
+    color: PRIMARY_COLOR,
     fontSize: 16,
     fontWeight: 'bold',
   },
