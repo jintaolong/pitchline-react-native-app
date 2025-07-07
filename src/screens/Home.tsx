@@ -1,8 +1,10 @@
 import React, { JSX } from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import TabNavigator from '../navigation/TabNavigator';
 import { Match } from '../models/Matches';
 import MatchCard from '../components/MatchCard';
+import TopSearchBar from '../components/TopSearchBar';
 
 export default function HomeScreen(): JSX.Element {
 
@@ -77,47 +79,53 @@ export default function HomeScreen(): JSX.Element {
   );
   
 
+  // Dummy fetchSuggestions implementation
+  const fetchSuggestions = async (query: string) => {
+    // Replace this with your actual suggestion fetching logic
+    return [];
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.content}>
-      <View>
-            <Text style={styles.sectionHeader}>{'Live Matches'}</Text>
-              {/* Matches List */}
-              <FlatList
-                data={liveMatches}
-                renderItem={renderMatch}
-                keyExtractor={(item) => item.id.toString()}
-                scrollEnabled={false}
-              />
-              <Text style={styles.sectionHeader}>{'Future Matches'}</Text>
-              {/* Matches List */}
-              <FlatList
-                data={futureMathces}
-                renderItem={renderMatch}
-                keyExtractor={(item) => item.id.toString()}
-                scrollEnabled={false}
-              />
-      </View>
-      </ScrollView>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <TopSearchBar 
+        fetchSuggestions={fetchSuggestions} 
+      />
       
+      <View style={styles.content}>
+        <Text style={styles.sectionHeader}>{'Live Matches'}</Text>
+        <FlatList
+          data={liveMatches}
+          renderItem={renderMatch}
+          keyExtractor={(item) => item.id.toString()}
+          scrollEnabled={false}
+        />
+        <Text style={styles.sectionHeader}>{'Future Matches'}</Text>
+        <FlatList
+          data={futureMathces}
+          renderItem={renderMatch}
+          keyExtractor={(item) => item.id.toString()}
+          scrollEnabled={false}
+        />
+      </View>
     </SafeAreaView>
-    
   );
 }
 
 const styles = StyleSheet.create({
   content: {
     flex: 1,
+    paddingTop: 16,
   },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+    zIndex: 10, // Ensure it is above other content
+    // position: 'relative', // Ensure it is positioned correctly
   },
   sectionHeader: {
     fontSize: 20,
     fontWeight: '700',
     color: '#000000',
-    marginTop: 32,
     marginBottom: 12,
     marginHorizontal: 20,
   },

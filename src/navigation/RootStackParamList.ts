@@ -6,6 +6,7 @@ export type RootStackParamList = {
   Prematch: {fixtureId: number}; // Pre-match details screen
   Postmatch:  {fixtureId: number}; // Post-match details screen
   Inplay:  {fixtureId: number}; // In-play details screen
+  LeagueDetails: {leagueId: number}; // League details screen
   TeamDetails: {teamId: number};
   PlayerDetails: {playerId: number};
 };

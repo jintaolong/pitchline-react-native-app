@@ -87,3 +87,61 @@ export const mockPlayer = (): Player => {
         } as PlayerStats,
     };
 }
+
+
+export const mockTopSearchData = [
+        {
+            id: 1,
+            name: 'Ligue 1',
+            photo: 'https://example.com/ligue1.jpg',
+            country: 'France',
+            flag: 'https://example.com/france_flag.jpg',
+            season: new Date().getFullYear(),
+            type: 'league',
+        },
+        {
+            id: 2,
+            name: 'Premier League',
+            photo: 'https://example.com/premierleague.jpg',
+            country: 'England',
+            flag: 'https://example.com/england_flag.jpg',
+            season: new Date().getFullYear(),
+            type: 'league',
+        },
+        {
+            id: 10,
+            name: 'Paris Saint-Germain',
+            photo: 'https://example.com/psg.jpg',
+            country: 'France',
+            founded: 1970,
+            stadium: 'Parc des Princes',
+            type: 'team',
+        },
+        {
+            id: 11,
+            name: 'Manchester City',
+            photo: 'https://example.com/mancity.jpg',
+            country: 'England',
+            founded: 1880,
+            stadium: 'Etihad Stadium',
+            type: 'team',
+        },
+        {
+            id: 100,
+            name: 'Lionel Messi',
+            photo: 'https://example.com/messi.jpg',
+            position: 'Forward',
+            nationality: 'Argentinian',
+            team: 'Paris Saint-Germain',
+            type: 'player',
+        },
+        {
+            id: 101,
+            name: 'Kevin De Bruyne',
+            photo: 'https://example.com/debruyne.jpg',
+            position: 'Midfielder',
+            nationality: 'Belgian',
+            team: 'Manchester City',
+            type: 'player',
+        }
+]

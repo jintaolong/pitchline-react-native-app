@@ -11,6 +11,7 @@ import PostMatchScreen from './screens/PostMatch';
 import InPlayDetailsScreen from './screens/InPlayDetails';
 import TeamDetailsScreen from './screens/TeamDetail';
 import PlayerDetailsScreen from './screens/PlayerDetails';
+import LeagueDetails from './screens/LeaguDetails';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 // const BottomNavigator = createNativeStackNavigator<BottomNavigatorStackParamList>();
@@ -49,6 +50,11 @@ export default function App() {
               />
             </Stack.Group>
             <Stack.Group>
+              <Stack.Screen 
+                name="LeagueDetails"
+                component={LeagueDetails}
+                options={{ title: 'LeagueDetails' }}
+              />
               <Stack.Screen 
                 name="TeamDetails"
                 component={TeamDetailsScreen}
