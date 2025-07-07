@@ -24,17 +24,11 @@ export const getMatchLit = async (searchDate: string): Promise<FixtureResponseDt
         return [];
     }
     // TOOD: remove max 1000 cap
-    const resp = response.data
-      .sort(
-        (a: FixtureResponseDto, b: FixtureResponseDto) => {
-          // const dateA = new Date(a.fixture.date);
-          // const dateB = new Date(b.fixture.date);
-            return a.league_id - b.league_id;
-        }
-      )
-      .slice(0, 30).map((item: any) => {
-      return item as FixtureResponseDto;
-    });
+    // Avoid creating a new array with .slice and .map if not needed.
+    // Sort in-place and return the original array to save memory.
+    const resp = response.data.sort(
+      (a: FixtureResponseDto, b: FixtureResponseDto) => a.league_id - b.league_id
+    );
     log.debug(`Successfully fetched ${resp.length} matches`);
     return resp;
   } catch (error) {

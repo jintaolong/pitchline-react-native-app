@@ -11,6 +11,7 @@ import {
   Modal,
   TextInput,
   FlatList,
+  SectionList,
 } from 'react-native';
 import MatchCard from '../components/MatchCard';
 import { Match } from '../models/Matches';
@@ -25,6 +26,18 @@ interface ScreenCalendarDate {
   calendarStartDate: Date;
   calendarEndDate: Date;
   calendarScrollIndex: number;
+}
+
+interface GroupedFixtures {
+  [competitionId: number]: {
+    name: string;
+    matches: Match[];
+  };
+}
+
+interface GroupFilter {
+  name: string;
+  id: number;
 }
 
 const getWeekDates = (selectedDate: Date = new Date()) => {
@@ -48,47 +61,6 @@ const getWeekDates = (selectedDate: Date = new Date()) => {
   return dates;
 }
 
-
-const formatStatus = (status: StatusDto, fixtureStartDate: string) : string => {
-  let out = ""
-  const startDate = new Date(fixtureStartDate);
-  const today = new Date();
-  if (status.long === 'Not Started') {
-    // You can now use startDate as a Date object
-    let prefix = '';
-    if (
-      startDate.getDate() === today.getDate() &&
-      startDate.getMonth() === today.getMonth() &&
-      startDate.getFullYear() === today.getFullYear()
-    ) {
-      prefix = 'Today';
-    } else {
-      const tomorrow = new Date(today);
-      tomorrow.setDate(today.getDate() + 1);
-      if (
-        startDate.getDate() === tomorrow.getDate() &&
-        startDate.getMonth() === tomorrow.getMonth() &&
-        startDate.getFullYear() === tomorrow.getFullYear()
-      ) {
-        prefix = 'Tomorrow';
-      } else {
-        // Use the exact date as prefix in format YYYY-MM-DD
-        prefix = `${startDate.getFullYear()}-${(startDate.getMonth() + 1)
-      .toString()
-      .padStart(2, '0')}-${startDate.getDate().toString().padStart(2, '0')}`;
-      }
-    }
-    out = `${prefix} ${startDate.getHours()}:${startDate.getMinutes().toString().padStart(2, '0')}`;
-  } else if (status.long === 'End') {
-    out = 'End';
-  } else{
-    // Inplay
-    out = `LIVE ${status.elapsed ? status.elapsed : 0} ${status.extra ? `+${status.extra}` : ''}`;
-  }
-  // TOOO: handle half time?
-  return out;
-}
-
 const getCalendarScrollIndex = (selectedDate: Date, startDate: Date) => {
   let timeGap = selectedDate.getTime() - startDate.getTime();
   let calendarScrollIndex = Math.floor(timeGap / (1000 * 60 * 60 * 24)) - 7;
@@ -105,72 +77,36 @@ const FootballMatchesScreen = () => {
     calendarScrollIndex: getCalendarScrollIndex(today, weekDates[0]),
     // calendarScrollIndex: 10 - 2
   });
-  log.debug(`Selected date initialized to: ${selectedDate.calendarStartDate.toLocaleDateString()}`);
-  log.debug(`Selected date initialized to: ${selectedDate.calendarEndDate.toLocaleDateString()}`);
-  // const calendarRef = useRef<Date>(today);
-  // const calendarScrollIndexRef = useRef<number>(14); // Center today in the calendar
-  // const [selectedDate, setSelectedDate] = useState<Date>(today);
-  const [allFixtures, setAllFixtures] = useState<Match[]>([]);
-  const [fixtures, setFixtures] = useState<Match[]>([]);
-  const [selectedFilters, setSelectedFilters] = useState(['All']);
-  // const [filteredFixtures, setFilteredFixtures] = useState<Match[]>([]);
+  const [allGroupedFixtures, setAllGroupedFixtures] = useState<GroupedFixtures>({});
+  const [selectedGroups, setSelectedGroups] = useState<number[]>([]);
+  const [selectedFilters, setSelectedFilters] = useState<GroupFilter[]>([{ name: 'All', id: 0 }]);
   const [showCompetitionModal, setShowCompetitionModal] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  // "allCompetitions" is the full list, updated only when allFixtures changes
-  const [allCompetitions, setAllCompetitions] = useState<string[]>([]);
-  // "competitions" is the filtered list, updated when searchText changes
-  const [competitions, setCompetitions] = useState<string[]>([]);
-
-  // useEffect(() => {
-  //   calendarRef.current = new Date()
-  // });
-  // Update allCompetitions when allFixtures changes
-  useEffect(() => {
-    const uniqueCompetitions = Array.from(
-      new Set(allFixtures.map(f => f.competition || 'Other'))
-    );
-    setAllCompetitions(uniqueCompetitions);
-    setCompetitions(uniqueCompetitions); // Reset competitions when fixtures change
-  }, [allFixtures]);
-
-  // Update competitions when searchText changes
-  useEffect(() => {
-    if (searchText.trim() === '') {
-      setCompetitions(allCompetitions);
-    } else {
-      setCompetitions(
-        allCompetitions.filter(comp =>
-          comp.toLowerCase().includes(searchText.toLowerCase())
-        )
-      );
-    }
-  }, [searchText, allCompetitions]);
-
   // Update filtered fixtures when filters or allFixtures change
   useEffect(() => {
     log.debug(`Selected filters: ${selectedFilters.join(', ')}`);
-    if (selectedFilters.includes('All')) {
-      setFixtures(allFixtures);
+    if (selectedFilters.find(f => f.name === 'All')) {
+      // setFixtures(allFixtures);
+      setSelectedGroups(Object.keys(allGroupedFixtures).map(Number));
       return;
     }
-    let filtered = allFixtures;
+    let filteredGroupIds = Object.keys(allGroupedFixtures).map(Number);
 
     const compFilters = selectedFilters.filter(f =>
-      f !== 'All' && f !== 'Women' && f !== 'Live Chat'
+      f.name !== 'All' && f.name !== 'Women' && f.name !== 'Live Chat'
     );
     if (compFilters.length > 0) {
-      filtered = filtered.filter(f =>
-        compFilters.includes(f.competition)
-      );
+      filteredGroupIds = compFilters.map(compFilter => compFilter.id);
     }
     if (selectedFilters.length === 0) {
-      filtered = []; // If no filters selected, show all fixtures
+      filteredGroupIds = []; // If no filters selected, show all fixtures
     }
-    log.debug(`Filtered fixtures count: ${filtered.length}`);
-    setFixtures(filtered);
-  }, [selectedFilters, allFixtures]);
+    log.debug(`Filtered fixtures count: ${filteredGroupIds.length}`);
+    // setFixtures(filtered);
+    setSelectedGroups(filteredGroupIds);
+  }, [selectedFilters, allGroupedFixtures]);
 
 
   const updateAllFixtures = () => {
@@ -187,7 +123,9 @@ const FootballMatchesScreen = () => {
 
     getMatchLit(formattedDate).then(
       (data: FixtureResponseDto[]) => {
-      matches = data.map((fixture) => {
+      // Group fixtures by competition
+      const grouped: GroupedFixtures = {};
+      data.forEach((fixture) => {
         const homeTeam = {
           id: fixture.fixture.teams.home.id,
           name: fixture.fixture.teams.home.name
@@ -200,55 +138,63 @@ const FootballMatchesScreen = () => {
         const awayLogo = fixture.fixture.teams.away.logo ? fixture.fixture.teams.away.logo : '';
         const homeScore = fixture.fixture.goals.home ? fixture.fixture.goals.home : null;
         const awayScore = fixture.fixture.goals.away ? fixture.fixture.goals.away : null;
-        // const status = formatStatus(fixture.fixture.fixture.status, fixture.fixture.fixture.date);
         const status = fixture.fixture.fixture.status.short;
         const competition = fixture.fixture.league.name || 'Unknown Competition';
         const competitionId = fixture.fixture.league.id || 0; // Assuming league ID is available
         const channel = 'Sky Sports'; // Placeholder, replace with actual channel data if available
         const viewers = '180,000'; // Placeholder, replace with actual viewers data if available
         const time = fixture.fixture.fixture.date ? new Date(fixture.fixture.fixture.date).toLocaleTimeString() : null;
-
-        return {
-        id: fixture.fixture.fixture.id,
-        homeTeam: homeTeam,
-        awayTeam: awayTeam,
-        homeLogo: homeLogo,
-        awayLogo: awayLogo,
-        homeScore: homeScore,
-        awayScore: awayScore,
-        status: status,
-        competition: competition,
-        competitionId: competitionId,
-        channel: channel,
-        viewers: viewers,
-        kickoffTime: fixture.fixture.fixture.date ? new Date(fixture.fixture.fixture.date) : null,
-        time: time,
-        } as Match;
+        
+        let comp = competitionId || 0;
+        grouped[comp] = grouped[comp] || { name: competition, matches: [] };
+        grouped[comp].matches.push({
+          id: fixture.fixture.fixture.id,
+          homeTeam: homeTeam,
+          awayTeam: awayTeam,
+          homeLogo: homeLogo,
+          awayLogo: awayLogo,
+          homeScore: homeScore,
+          awayScore: awayScore,
+          status: status,
+          competition: competition,
+          competitionId: competitionId,
+          channel: channel,
+          viewers: viewers,
+          kickoffTime: fixture.fixture.fixture.date ? new Date(fixture.fixture.fixture.date) : null,
+          time: time,
+        } as Match);
+        });
+        setAllGroupedFixtures(grouped);
+        
+        // Get sorted competition names
+        const competitionIds = Object.keys(grouped).map(Number).sort((a, b) => a - b);
+        setSelectedGroups(competitionIds)
       });
-      setAllFixtures(matches);
       }
-    );
-  }
+    // );
+  // }
   
   useEffect(() => {
+    // reset everything
+    setSelectedGroups([]);
     // update ref
     updateAllFixtures();
   }, [selectedDate]);
 
-  const filteredCompetitions = competitions.filter(comp =>
-    comp.toLowerCase().includes(searchText.toLowerCase())
+  const filteredGroups = selectedGroups.filter(groupId =>
+    allGroupedFixtures[groupId].name.toLowerCase().includes(searchText.toLowerCase())
   );
 
-  const toggleFilter = (filter: string) => {
+  const toggleFilter = (filter: { name: string; id: number }) => {
     log.debug(`Toggling filter: ${filter}`);
     let temp_filters = selectedFilters.slice();
     // If toggling a filter other than "All", remove "All" from selectedFilters
-    if (filter !== 'All' && temp_filters.includes('All')) {
-      temp_filters = temp_filters.filter(f => f !== 'All');
+    if (filter.name !== 'All' && temp_filters.find(f => f.name === 'All')) {
+      temp_filters = temp_filters.filter(f => f.name !== 'All');
     }
-    if (temp_filters.includes(filter)) {
+    if (temp_filters.find(f => f.name === filter.name)) {
       // unselect the filter if it gets double selected
-      setSelectedFilters(temp_filters.filter(f => f !== filter));
+      setSelectedFilters(temp_filters.filter(f => f.id !== filter.id));
     } else {
       setSelectedFilters([...temp_filters, filter]);
     }
@@ -316,17 +262,20 @@ const FootballMatchesScreen = () => {
         />
         
         <FlatList
-          data={competitions}
+          data={Object.keys(allGroupedFixtures)}
           keyExtractor={(item) => item}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.competitionItem}
               onPress={() => {
-                toggleFilter(item);
+                toggleFilter({
+                  name: allGroupedFixtures[Number(item)].name,
+                  id: Number(item),
+                });
                 setShowCompetitionModal(false);
               }}
             >
-              <Text style={styles.competitionItemText}>{item}</Text>
+              <Text style={styles.competitionItemText}>{allGroupedFixtures[Number(item)].name}</Text>
             </TouchableOpacity>
           )}
         />
@@ -348,20 +297,7 @@ const FootballMatchesScreen = () => {
         </View>
       </View>
 
-      <ScrollView
-        style={styles.content}
-        onScroll={({ nativeEvent }) => {
-        if (nativeEvent.contentOffset.y <= -10) {
-        // At the top of the scroll view
-        // Trigger your function here
-        console.log('Scrolled to top');
-        updateAllFixtures();
-        // Example: call a function
-        // handleScrollTop();
-          }
-        }}
-        scrollEventThrottle={16}
-      >
+
         {/* Calendar */}
         <View style={styles.calendar}>
           <FlatList
@@ -394,13 +330,13 @@ const FootballMatchesScreen = () => {
             <TouchableOpacity
               style={[
           styles.filterButton,
-          selectedFilters.includes('All') && styles.activeFilterButton
+          selectedFilters.find(f => f.name === 'All') && styles.activeFilterButton
               ]}
-              onPress={() => toggleFilter('All')}
+              onPress={() => toggleFilter({ name: 'All', id: 0 })}
             >
               <Text style={[
           styles.filterButtonText,
-          selectedFilters.includes('All') && styles.activeFilterButtonText
+          selectedFilters.find(f => f.name === 'All') && styles.activeFilterButtonText
               ]}>
           All
               </Text>
@@ -408,13 +344,13 @@ const FootballMatchesScreen = () => {
             <TouchableOpacity
               style={[
           styles.filterButton,
-          selectedFilters.includes('Women') && styles.activeFilterButton
+          selectedFilters.find(f => f.name === 'Women') && styles.activeFilterButton
               ]}
-              onPress={() => toggleFilter('Women')}
+              onPress={() => toggleFilter({ name: 'Women', id: 1 })}
             >
               <Text style={[
           styles.filterButtonText,
-          selectedFilters.includes('Women') && styles.activeFilterButtonText
+          selectedFilters.find(f => f.name === 'Women') && styles.activeFilterButtonText
               ]}>
           Women
               </Text>
@@ -430,13 +366,13 @@ const FootballMatchesScreen = () => {
             <TouchableOpacity
               style={[
           styles.filterButton,
-          selectedFilters.includes('Live Chat') && styles.activeFilterButton
+          selectedFilters.find(f => f.name === 'Live Chat') && styles.activeFilterButton
               ]}
-              onPress={() => toggleFilter('Live Chat')}
+              onPress={() => toggleFilter({ name: 'Live Chat', id: 2 })}
             >
               <Text style={[
           styles.filterButtonText,
-          selectedFilters.includes('Live Chat') && styles.activeFilterButtonText
+          selectedFilters.find(f => f.name === 'Live Chat') && styles.activeFilterButtonText
               ]}>
           Live Chat
               </Text>
@@ -446,15 +382,15 @@ const FootballMatchesScreen = () => {
           {/* Show selected filters as separate buttons */}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 }}>
             {selectedFilters
-              .filter(f => f !== 'All') // Optionally hide "All" from the selected list
+              .filter(f => f.name !== 'All') // Optionally hide "All" from the selected list
               .map(filter => (
             <TouchableOpacity
-            key={filter}
+            key={filter.id}
             style={[styles.filterButton, styles.activeFilterButton, { marginRight: 8, marginBottom: 8 }]}
             onPress={() => toggleFilter(filter)}
             >
             <Text style={[styles.filterButtonText, styles.activeFilterButtonText]}>
-              {filter} ✕
+              {filter.name} ✕
             </Text>
             </TouchableOpacity>
               ))}
@@ -472,36 +408,17 @@ const FootballMatchesScreen = () => {
         </View>
 
         {/* Matches List */}
-        {(() => {
-          // Group fixtures by competition
-          const grouped: { [competition: number]: Match[] } = {};
-          const competitionIdMap: { [key: number]: string } = {};
-          fixtures.forEach((fixture) => {
-            const comp = fixture.competitionId || 0;
-            if (!competitionIdMap[comp]) competitionIdMap[comp] = 'Other';
-            competitionIdMap[comp] = fixture.competition || 'Other';
-            if (!grouped[comp]) grouped[comp] = [];
-            grouped[comp].push(fixture);
-          });
-          // Get sorted competition names
-            const competitionIds = Object.keys(grouped).map(Number).sort((a, b) => a - b);
-          return competitionIds.map((compId) => (
-        <View key={compId}>
-            <Text style={{ fontWeight: '500', fontSize: 13, color: '#666', marginLeft: 20, marginTop: 20, marginBottom: 8 }}>{competitionIdMap[compId]}</Text>
-          <FlatList
-            data={[...grouped[compId]].sort((a, b) => {
-          const aTime = a.kickoffTime ? a.kickoffTime.getTime() : Number.MAX_SAFE_INTEGER;
-          const bTime = b.kickoffTime ? b.kickoffTime.getTime() : Number.MAX_SAFE_INTEGER;
-          return aTime - bTime;
-            })}
-            renderItem={renderMatch}
-            keyExtractor={(item, index) => `${item.competitionId || ''}-${item.id}-${index}`}
-            scrollEnabled={false}
-          />
-        </View>
-          ));
-        })()}
-      </ScrollView>
+    <SectionList
+      sections={filteredGroups.map(groupId => ({
+        title: allGroupedFixtures[groupId].name,
+        data: allGroupedFixtures[groupId].matches || [],
+      }))}
+      keyExtractor={(item) => `${item.competitionId}-${item.id}`}
+      renderSectionHeader={({ section: { title } }) => (
+        <Text style={{ fontWeight: '500', fontSize: 13, color: '#666', marginLeft: 20, marginTop: 20, marginBottom: 8 }}>{title}</Text>
+      )}
+      renderItem={renderMatch}
+    />
 
       {renderCompetitionModal()}
     </SafeAreaView>
