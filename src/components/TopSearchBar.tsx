@@ -13,6 +13,7 @@ StyleSheet,
 Keyboard,
 ScrollView,
 SectionList,
+Dimensions,
 } from 'react-native';
 import { mockTopSearchData } from '../utils/mocks';
 import log from '../utils/logger';
@@ -40,12 +41,16 @@ type TopSearchBarProps = {
 fetchSuggestions: (query: string) => Promise<SearchItem[]>;
 };
 
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 const TopSearchBar: React.FC<TopSearchBarProps> = ({ fetchSuggestions }) => {
     const [query, setQuery] = useState('');
     const [suggestions, setSuggestions] = useState<SearchItem[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    // const [currentSuggestionContainerHeight, setCurrentSuggestionContainerHeight] = useState(0);
     const navigation = useNavigation();
     const inputRef = useRef<TextInput>(null);
+    // const suggestionsContainerRef = useRef<View>(null);
 
     const handleChange = async (text: string) => {
         setQuery(text);
@@ -89,10 +94,30 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({ fetchSuggestions }) => {
         .filter(section => section.data.length > 0);
 
     return (
-        <View style={[styles.container, showSuggestions && { flex: 1}]}>
+        <View 
+            style={[
+            styles.container,
+            showSuggestions && suggestions.length > 0 && { flex: 1 }
+            ]}
+            onLayout={event => {
+            const { height } = event.nativeEvent.layout;
+            log.debug('TopSearchBar container height:', height);
+            }}
+        >
             <TextInput
                 ref={inputRef}
-                style={styles.input}
+                style={[
+                    styles.input,
+                    showSuggestions && {
+                        elevation: 4,
+                        shadowColor: '#000',
+                        shadowOpacity: 0.1,
+                        shadowRadius: 8,
+                        shadowOffset: { width: 0, height: 2 },
+                        borderBottomLeftRadius: 0,
+                        borderBottomRightRadius: 0,
+                    }
+                ]}
                 placeholder="Search leagues, teams, players..."
                 value={query}
                 onChangeText={handleChange}
@@ -101,31 +126,41 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({ fetchSuggestions }) => {
                 returnKeyType="search"
             />
             {showSuggestions && suggestions.length > 0 && (
-                <View style={styles.suggestionsContainer}>
-                    <SectionList
-                        sections={sections}
-                        keyExtractor={item => `${item.type}${item.id}`}
-                        keyboardShouldPersistTaps="handled"
-                        renderSectionHeader={({ section: { title } }) => (
-                            <Text style={{ fontWeight: 'bold', fontSize: 14, marginVertical: 6, marginLeft: 8 }}>
-                                {title}
-                            </Text>
-                        )}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                style={styles.suggestionItem}
-                                onPress={() => handleSelect(item)}
-                            >
-                                <Image source={{ uri: item.photo || '' }} style={styles.image} />
-                                <Text style={styles.name}>{item.name}</Text>
-                                <Text style={styles.type}>
-                                    {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-                                </Text>
-                            </TouchableOpacity>
-                        )}
-                        showsVerticalScrollIndicator
-                    />
-                </View>
+            <View
+                style={styles.suggestionsContainer}
+            >
+                <SectionList
+                sections={sections}
+                keyExtractor={item => `${item.type}${item.id}`}
+                keyboardShouldPersistTaps="handled"
+                renderSectionHeader={({ section: { title } }) => (
+                    <Text style={{ fontWeight: 'bold', fontSize: 14, marginVertical: 6, marginLeft: 8 }}>
+                    {title}
+                    </Text>
+                )}
+                renderItem={({ item }) => (
+                    <TouchableOpacity
+                    style={styles.suggestionItem}
+                    onPress={() => handleSelect(item)}
+                    >
+                    <Image source={{ uri: item.photo || '' }} style={styles.image} />
+                    <Text style={styles.name}>{item.name}</Text>
+                    <Text style={styles.type}>
+                        {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                    </Text>
+                    </TouchableOpacity>
+                )}
+                showsVerticalScrollIndicator
+                onContentSizeChange={() => {
+                    // This will trigger a re-render and shrink the container if content reduces
+                    // No-op here, but ensures SectionList recalculates its height
+                    if (showSuggestions) {
+                        setShowSuggestions(false);
+                        setShowSuggestions(true);
+                    }
+                }}
+                />
+            </View>
             )}
         </View>
 );
@@ -148,19 +183,22 @@ input: {
 },
 suggestionsContainer: {
     position: 'absolute',
-    top: 48,
+    top: 50,
     left: 16,
     right: 16,
     backgroundColor: '#fff',
     borderRadius: 8,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
     elevation: 4,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
-    maxHeight: 350, // <-- keep this here
     zIndex: 100,    // <-- ensure it's above other content
     overflow: 'hidden', // <-- ensure children are clipped
+    maxHeight: SCREEN_HEIGHT - 48,
+    height: SCREEN_HEIGHT - 48,
 },
 suggestionItem: {
     flexDirection: 'row',
