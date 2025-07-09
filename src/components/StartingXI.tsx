@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Lineup, LineupPlayer } from '../models/Lineups';
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { colors, globalStyles } from '../styles/globalStyles';
@@ -168,9 +168,47 @@ const renderFormationOnPitch = (lineup: Lineup,
                         borderWidth: 2,
                         borderColor: '#fff',
                     }}>
-                        <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}>
-                        {player.number || ''}
-                        </Text>
+                        <View
+                            style={{
+                                position: 'absolute',
+                                top: -8,
+                                right: -12,
+                                backgroundColor: '#fff',
+                                borderRadius: 10,
+                                width: 20,
+                                height: 20,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderWidth: 1,
+                                borderColor: '#6366F1',
+                                zIndex: 2,
+                            }}
+                        >
+                            <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#6366F1' }}>
+                                {player.number}
+                            </Text>
+                        </View>
+                        {player.photo ? (
+                            <View
+                                style={{
+                                    width: 34,
+                                    height: 34,
+                                    borderRadius: 17,
+                                    overflow: 'hidden',
+                                    backgroundColor: '#fff',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                <Image
+                                    source={{ uri: player.photo }}
+                                    style={{ width: 34, height: 34, borderRadius: 17 }}
+                                    resizeMode="cover"
+                                />
+                            </View>
+                        ) : (
+                            <MaterialCommunityIcons name="account" size={24} color="#fff" />
+                        )}
                     </View>
                     <Text
                         style={{
@@ -182,7 +220,15 @@ const renderFormationOnPitch = (lineup: Lineup,
                         }}
                         numberOfLines={1}
                     >
-                        {player.name || ''}
+                        {(() => {
+                            // Extract surname (last word in name)
+                            const surname = player.name ? player.name.trim().split(' ').slice(-1)[0] : '';
+                            return (
+                                <View style={{ alignItems: 'center' }}>
+                                    <Text style={{ fontSize: 10, fontWeight: '500', color: '#1F2937' }}>{surname}</Text>
+                                </View>
+                            );
+                        })()}
                     </Text>
                 </TouchableOpacity>
                 </View>
@@ -204,7 +250,7 @@ const PitchLineStartingXI = ({homeLineup, awayLineup}: {homeLineup: Lineup; away
         <View
             style={{
             width: '100%',
-            aspectRatio: 2 / 3,
+            aspectRatio: 2 / 3.5,
             // backgroundColor: '#e0f2fe',
             borderRadius: 24,
             borderWidth: 2,

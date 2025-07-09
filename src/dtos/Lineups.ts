@@ -4,6 +4,7 @@ export interface LineupPlayerDto {
     number: number;
     pos: string;
     grid: string | null;
+    photo: string | null;
 }
 
 export interface LineupPlayerWrapperDto {

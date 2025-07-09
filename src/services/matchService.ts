@@ -77,7 +77,7 @@ export const getFixture = async (fixtureId: number): Promise<FixtureResponseDto 
 
 // export const getMatchDetails = async (fixtureId: number): Promise<FixtureResponse | null> => {
   export const getMatchLineups = async (fixtureId: number): Promise<LineupsResponseDto | null> => {
-    fixtureId = 100; // fix it for now for testing
+    // fixtureId = 100; // fix it for now for testing
     try {
       log.debug(`Fetching lineups for fixture ID: ${fixtureId}`);
       const response = await axios.get<LineupsResponseDto>(

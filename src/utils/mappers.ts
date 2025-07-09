@@ -67,7 +67,7 @@ export const lineUpDtoToLineupPlayer = (data: LineupDto) => {
             id: player.player.id,
             name: player.player.name,
             number: player.player.number || 0,
-            photo: null,
+            photo: player.player.photo || null,
             position: player.player.pos || null,
             grid: player.player.grid ? {
                 row: parseInt(player.player.grid.split(':')[0]) || null,
