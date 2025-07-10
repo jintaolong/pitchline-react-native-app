@@ -20,6 +20,7 @@ import PitchLineStandingTable from '../components/StandingTable';
 import { leagueStandingDtoToLeague } from '../utils/mappers';
 import log from '../utils/logger';
 import { globalStyles } from '../styles/globalStyles';
+import { addFavourite, Favourite, FavouriteType, getFavourites, isFavourite, removeFavourite } from '../utils/follow';
 
 const { width } = Dimensions.get('window');
 
@@ -81,6 +82,8 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
   const [teamLeague, setTeamLeague] = useState<League | null>(null);
   const [teamLeagues, setTeamLeagues] = useState<League[]>([]);
   const [mostRecentFixture, setMostRecentFixture] = useState<TeamFixtureDto | undefined>(undefined);
+  const [hasFollowed, setHasFollowed] = useState<boolean>(false);
+
   useEffect(() => {
     getTeamDetails(teamId).then((data: TeamDto | null) => {
       if(!!data){
@@ -88,6 +91,12 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
       }
     });
     setTeamLeagues([]); // reset leagues when teamId changes
+    isFavourite({
+      id: teamId,
+      type: 'team' as FavouriteType
+    } as Favourite).then((resp) => {
+      setHasFollowed(resp);
+    });
   }, [teamId]);
 
   const [recentFixtures, setRecentFixtures] = useState<RecentFixture[]>([]);
@@ -196,283 +205,316 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
     <>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <SafeAreaView style={styles.container}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton}>
-              <Text style={styles.backArrow}>←</Text>
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>{teamDetail.team_name}</Text>
-            <View style={styles.headerSpacer} />
-          </View>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton}>
+          <Text style={styles.backArrow}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{teamDetail.team_name}</Text>
+        <View style={styles.headerSpacer} />
+        </View>
 
-          {/* Most Recent Match */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Most Recent Match</Text>
-            <View style={styles.matchCard}>
-              <View style={styles.matchTeams}>
-                <View style={styles.teamInfo}>
-                  <View style={styles.teamLogo}>
-                    {mostRecentFixture?.teams.home.logo ? (
-                      <Image
-                        source={{ uri: mostRecentFixture.teams.home.logo }}
-                        style={{ width: 24, height: 24, borderRadius: 12 }}
-                        resizeMode="contain"
-                      />
-                    ) : (
-                      <Text style={styles.logoText}>
-                        {mostRecentFixture?.teams.home.name?.charAt(0) ?? ''}
-                      </Text>
-                    )}
-                  </View>
-                  <Text style={styles.teamName}>{mostRecentFixture?.teams.home.name ?? ''}</Text>
-                </View>
-                
-                <View style={styles.matchScore}>
-                  <Text style={styles.matchDate}>
-                  {mostRecentFixture?.fixture.date
-                    ? (() => {
-                      const d = new Date(mostRecentFixture.fixture.date);
-                      const yyyy = d.getFullYear();
-                      const mm = String(d.getMonth() + 1).padStart(2, '0');
-                      const dd = String(d.getDate()).padStart(2, '0');
-                      return `${yyyy}-${mm}-${dd}`;
-                    })()
-                    : ''}
-                  </Text>
-                  <Text style={styles.scoreText}>{mostRecentFixture?.goals.home ?? 0} - {mostRecentFixture?.goals.away ?? 0}</Text>
-                  <Text style={styles.matchDate}>
-                  {mostRecentFixture?.fixture.date
-                    ? (() => {
-                      const d = new Date(mostRecentFixture.fixture.date);
-                      let hours = d.getUTCHours();
-                      const minutes = d.getUTCMinutes();
-                      const ampm = hours >= 12 ? ' PM' : ' AM';
-                      hours = hours % 12;
-                      hours = hours ? hours : 12; // the hour '0' should be '12'
-                      const min = String(minutes).padStart(2, '0');
-                      return `${hours}:${min}${ampm} GMT`;
-                    })()
-                    : ''}
-                  </Text>
-                  <Text style={styles.competition}>{mostRecentFixture?.league.name ?? ''}</Text>
-                </View>
-                
-                <View style={styles.teamInfo}>
-                  <View style={styles.teamLogo}>
-                    {mostRecentFixture?.teams.away.logo ? (
-                      <Image
-                        source={{ uri: mostRecentFixture.teams.away.logo }}
-                        style={{ width: 24, height: 24, borderRadius: 12 }}
-                        resizeMode="contain"
-                      />
-                    ) : (
-                      <Text style={styles.logoText}>
-                        {mostRecentFixture?.teams.home.name?.charAt(0) ?? ''}
-                      </Text>
-                    )}
-                  </View>
-                  <Text style={styles.teamName}>{mostRecentFixture?.teams.away.name ?? ''}</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-
-          {/* Form & Upcoming */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Form & Upcoming</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{marginHorizontal: -8}}>
-              <View style={[styles.formContainer, {paddingHorizontal: 8}]}>
-              {recentFixtures.map((form, index) => (
-                <TouchableOpacity
-                  key={`${index}`}
-                  style={[
-                  styles.formBox,
-                  form.result === 'W'
-                  ? styles.formWin
-                  : form.result === 'L'
-                  ? styles.formLost
-                  : form.result === 'D'
-                  ? styles.formDraw
-                  : styles.formFuture,
-                  ]}
-                  onPress={() => {
-                  // @ts-ignore
-                  if (form.fixtureId) {
-                  // @ts-ignore
-                  if (typeof navigation !== 'undefined') {
-                  navigation.navigate(
-                    form.result !== 'O' ? 'Postmatch' : 'Prematch', 
-                    { fixtureId: form.fixtureId }
-                  );
-                  }
-                  }
-                  }}
-                >
-                  <Text style={styles.formResult}>{form.result}</Text>
-                  <Text style={styles.formCompetition}>
-                  {form.competition
-                  .split(' ')
-                  .map(word => word[0])
-                  .join('')
-                  .toUpperCase()}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-              </View>
-            </ScrollView>
-          </View>
-
-          {/* League Standings */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>League Standings</Text>
-            
-            {/* League Tabs */}
-            {
-              teamLeagues.length === 0 ? (
-                <Text style={{textAlign: 'center', color: '#9CA3AF'}}>No league standings available</Text>
-              ) : 
-              <View style={styles.leagueTabs}>
-              {teamLeagues.map((league, index) => {
-                if (!league || !league.currentStandings || league.currentStandings.length === 0) {
-                  log.debug(`League: ${index + 1} has no current standings`);
-                  return null; // Skip rendering if no standings are available
-                }
-                log.debug(`League: ${league.name}, Current Standings: ${league.currentStandings.length}`);
-                let leagueName = `Unknown League ${index + 1}`;
-                  if (league.currentStandings.length > 0 && league.currentStandings[0][0].group) {
-                    // leagueName = league.currentStandings[0][0].team.name;
-                    leagueName = league.currentStandings[0][0].group;
-                    if (leagueName === 'Domestic League') {
-                      setActiveLeague('Domestic League');
-                    }
-                  }
-                  return (
-                      <TouchableOpacity
-                      key={`${leagueName}-${index}`}
-                      style={[styles.leagueTab, (activeLeague === leagueName || teamLeagues.length === 1) && styles.activeLeagueTab]}
-                      onPress={() => setActiveLeague(leagueName)}
-                      >
-                      <Text style={[styles.leagueTabText, activeLeague === leagueName && styles.activeLeagueTabText]}>
-                        {leagueName}
-                      </Text>
-                      </TouchableOpacity>
-                  )
-              })}
-            </View>
+        {/* Follow Button */}
+        <View style={{ alignItems: 'center', marginTop: 12, marginBottom: -8 }}>
+        <TouchableOpacity
+          style={{
+          backgroundColor: '#6366F1',
+          borderRadius: 20,
+          paddingHorizontal: 24,
+          paddingVertical: 8,
+          flexDirection: 'row',
+          alignItems: 'center',
+          }}
+          onPress={() => {
+            let fav = {
+              id: teamDetail.team_id,
+              type: 'team' as FavouriteType, // Assuming 'team' is a valid FavouriteType
             }
-            <View style={styles.section}>
-              {/* Standings Table */}
-              {!!teamLeagues && teamLeagues.length > 0 &&
-                teamLeagues.map((league, index) => {
-                  const groupName = league.currentStandings.length > 0 ? league.currentStandings[0][0].group : `group-${index}`;
-                  return (
-                    activeLeague === groupName &&
-                      <View style={{marginBottom: 20}} key={`league-standings-${index}`}>
-                        <PitchLineStandingTable
-                          key={`${groupName}-${index}`}
-                          standings={league.currentStandings[0]} // assuming the first element of current standing is the one
-                          // TODO: clarify!!!!
-                          teamId={teamId}
-                          neighbour={2} // show only teams within 2 positions of the current team
-                          onPress={(id: number) => {
-                            navigation.navigate('TeamDetails', { teamId : id });
-                          }}
-                        />
-                      </View>
-                  );
-                })}
-                <Text style={globalStyles.footNotes}>
-                  Last updated: {teamLeagues.length > 0 && teamLeagues[0].lastUpdated
-                    ? teamLeagues[0].lastUpdated
-                    : 'N/A'}
-                </Text>
+            if (hasFollowed){
+              removeFavourite(fav).then(() => {
+                setHasFollowed(false);
+              });
+            } else {
+              addFavourite(fav).then(() => {
+              setHasFollowed(true);
+            });
+            }
+          }}
+        >
+          <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+            {hasFollowed ? '✓ Following' : '+ Follow'}
+          </Text>
+        </TouchableOpacity>
+        </View>
+
+        {/* Most Recent Match */}
+        <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Most Recent Match</Text>
+        <View style={styles.matchCard}>
+          <View style={styles.matchTeams}>
+          <View style={styles.teamInfo}>
+            <View style={styles.teamLogo}>
+            {mostRecentFixture?.teams.home.logo ? (
+              <Image
+              source={{ uri: mostRecentFixture.teams.home.logo }}
+              style={{ width: 24, height: 24, borderRadius: 12 }}
+              resizeMode="contain"
+              />
+            ) : (
+              <Text style={styles.logoText}>
+              {mostRecentFixture?.teams.home.name?.charAt(0) ?? ''}
+              </Text>
+            )}
+            </View>
+            <Text style={styles.teamName}>{mostRecentFixture?.teams.home.name ?? ''}</Text>
+          </View>
+          
+          <View style={styles.matchScore}>
+            <Text style={styles.matchDate}>
+            {mostRecentFixture?.fixture.date
+            ? (() => {
+              const d = new Date(mostRecentFixture.fixture.date);
+              const yyyy = d.getFullYear();
+              const mm = String(d.getMonth() + 1).padStart(2, '0');
+              const dd = String(d.getDate()).padStart(2, '0');
+              return `${yyyy}-${mm}-${dd}`;
+            })()
+            : ''}
+            </Text>
+            <Text style={styles.scoreText}>{mostRecentFixture?.goals.home ?? 0} - {mostRecentFixture?.goals.away ?? 0}</Text>
+            <Text style={styles.matchDate}>
+            {mostRecentFixture?.fixture.date
+            ? (() => {
+              const d = new Date(mostRecentFixture.fixture.date);
+              let hours = d.getUTCHours();
+              const minutes = d.getUTCMinutes();
+              const ampm = hours >= 12 ? ' PM' : ' AM';
+              hours = hours % 12;
+              hours = hours ? hours : 12; // the hour '0' should be '12'
+              const min = String(minutes).padStart(2, '0');
+              return `${hours}:${min}${ampm} GMT`;
+            })()
+            : ''}
+            </Text>
+            <Text style={styles.competition}>{mostRecentFixture?.league.name ?? ''}</Text>
+          </View>
+          
+          <View style={styles.teamInfo}>
+            <View style={styles.teamLogo}>
+            {mostRecentFixture?.teams.away.logo ? (
+              <Image
+              source={{ uri: mostRecentFixture.teams.away.logo }}
+              style={{ width: 24, height: 24, borderRadius: 12 }}
+              resizeMode="contain"
+              />
+            ) : (
+              <Text style={styles.logoText}>
+              {mostRecentFixture?.teams.home.name?.charAt(0) ?? ''}
+              </Text>
+            )}
+            </View>
+            <Text style={styles.teamName}>{mostRecentFixture?.teams.away.name ?? ''}</Text>
           </View>
           </View>
+        </View>
+        </View>
 
-          {/* Club Ranking */}
-          {/* <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Club Ranking</Text>
-            <View style={styles.rankingCard}>
-              <Text style={styles.rankingLabel}>UEFA Ranking</Text>
-              <Text style={styles.rankingNumber}>#2</Text>
-              <Text style={styles.rankingSubtext}>Club Coefficients</Text>
-            </View>
-          </View> */}
-
-          {/* Coach Info */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Coach</Text>
-            {
-              teamDetail && teamDetail.coach ?
-                (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-                    <View style={{ width: 60, height: 60, borderRadius: 30, overflow: 'hidden', backgroundColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' }}>
-                      {teamDetail.coach.photo ? (
-                        <Image
-                          source={{ uri: teamDetail.coach.photo }}
-                          style={{ width: 60, height: 60, borderRadius: 30 }}
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <Text style={{ fontSize: 32 }}>👔</Text>
-                      )}
-                    </View>
-                    <View>
-                      <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1F2937' }}>
-                        {teamDetail.coach.name}
-                      </Text>
-                      <Text style={{ fontSize: 14, color: '#6B7280' }}>
-                        {teamDetail.coach.nationality}
-                      </Text>
-                      <Text style={{ fontSize: 12, color: '#9CA3AF' }}>
-                        Age: {teamDetail.coach.age}
-                      </Text>
-                    </View>
-                  </View>    
-                ) : (
-                  <View style={styles.largePlayerCard}>
-                    <Text style={{ fontSize: 16, color: '#9CA3AF' }}>No coach information available</Text>
-                  </View>
-                )
-              }
-            </View>
-
-
-
-          {/* Squad & Management */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Squad & Management</Text>
-            <View style={styles.squadGrid}>
-              {teamDetail.current_squad.map((player, index) => (
-                <TouchableOpacity
-                  key={player.id ? `player-${index}`: index}
-                  style={styles.playerCard}
-                  onPress={() => {
-                  navigation.navigate('PlayerDetails', { playerId: player.id });
-                  }}
-                >
-                  <View style={styles.playerPhoto}>
-                  {!player.photo ? (
-                    <View style={styles.photoPlaceholder}>
-                    <Text style={styles.photoText}>👤</Text>
-                    </View>
-                  ) : (
-                    <Image
-                    source={{ uri: player.photo }}
-                    style={{ width: '100%', height: '100%' }}
-                    resizeMode="cover"
-                    />
-                  )}
-                  </View>
-                  <Text style={styles.playerName}>{player.name}</Text>
-                  {/* <Text style={styles.playerPosition}>{player.statistics.position}</Text> */}
-                </TouchableOpacity>
-              ))}
-              
-            </View>
+        {/* Form & Upcoming */}
+        <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Form & Upcoming</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{marginHorizontal: -8}}>
+          <View style={[styles.formContainer, {paddingHorizontal: 8}]}>
+          {recentFixtures.map((form, index) => (
+          <TouchableOpacity
+            key={`${index}`}
+            style={[
+            styles.formBox,
+            form.result === 'W'
+            ? styles.formWin
+            : form.result === 'L'
+            ? styles.formLost
+            : form.result === 'D'
+            ? styles.formDraw
+            : styles.formFuture,
+            ]}
+            onPress={() => {
+            // @ts-ignore
+            if (form.fixtureId) {
+            // @ts-ignore
+            if (typeof navigation !== 'undefined') {
+            navigation.navigate(
+            form.result !== 'O' ? 'Postmatch' : 'Prematch', 
+            { fixtureId: form.fixtureId }
+            );
+            }
+            }
+            }}
+          >
+            <Text style={styles.formResult}>{form.result}</Text>
+            <Text style={styles.formCompetition}>
+            {form.competition
+            .split(' ')
+            .map(word => word[0])
+            .join('')
+            .toUpperCase()}
+            </Text>
+          </TouchableOpacity>
+          ))}
           </View>
         </ScrollView>
+        </View>
+
+        {/* League Standings */}
+        <View style={styles.section}>
+        <Text style={styles.sectionTitle}>League Standings</Text>
+        
+        {/* League Tabs */}
+        {
+          teamLeagues.length === 0 ? (
+          <Text style={{textAlign: 'center', color: '#9CA3AF'}}>No league standings available</Text>
+          ) : 
+          <View style={styles.leagueTabs}>
+          {teamLeagues.map((league, index) => {
+          if (!league || !league.currentStandings || league.currentStandings.length === 0) {
+            log.debug(`League: ${index + 1} has no current standings`);
+            return null; // Skip rendering if no standings are available
+          }
+          log.debug(`League: ${league.name}, Current Standings: ${league.currentStandings.length}`);
+          let leagueName = `Unknown League ${index + 1}`;
+            if (league.currentStandings.length > 0 && league.currentStandings[0][0].group) {
+            // leagueName = league.currentStandings[0][0].team.name;
+            leagueName = league.currentStandings[0][0].group;
+            if (leagueName === 'Domestic League') {
+              setActiveLeague('Domestic League');
+            }
+            }
+            return (
+              <TouchableOpacity
+              key={`${leagueName}-${index}`}
+              style={[styles.leagueTab, (activeLeague === leagueName || teamLeagues.length === 1) && styles.activeLeagueTab]}
+              onPress={() => setActiveLeague(leagueName)}
+              >
+              <Text style={[styles.leagueTabText, activeLeague === leagueName && styles.activeLeagueTabText]}>
+              {leagueName}
+              </Text>
+              </TouchableOpacity>
+            )
+          })}
+        </View>
+        }
+        <View style={styles.section}>
+          {/* Standings Table */}
+          {!!teamLeagues && teamLeagues.length > 0 &&
+          teamLeagues.map((league, index) => {
+            const groupName = league.currentStandings.length > 0 ? league.currentStandings[0][0].group : `group-${index}`;
+            return (
+            activeLeague === groupName &&
+              <View style={{marginBottom: 20}} key={`league-standings-${index}`}>
+              <PitchLineStandingTable
+                key={`${groupName}-${index}`}
+                standings={league.currentStandings[0]} // assuming the first element of current standing is the one
+                // TODO: clarify!!!!
+                teamId={teamId}
+                neighbour={2} // show only teams within 2 positions of the current team
+                onPress={(id: number) => {
+                navigation.navigate('TeamDetails', { teamId : id });
+                }}
+              />
+              </View>
+            );
+          })}
+          <Text style={globalStyles.footNotes}>
+            Last updated: {teamLeagues.length > 0 && teamLeagues[0].lastUpdated
+            ? teamLeagues[0].lastUpdated
+            : 'N/A'}
+          </Text>
+        </View>
+        </View>
+
+        {/* Club Ranking */}
+        {/* <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Club Ranking</Text>
+        <View style={styles.rankingCard}>
+          <Text style={styles.rankingLabel}>UEFA Ranking</Text>
+          <Text style={styles.rankingNumber}>#2</Text>
+          <Text style={styles.rankingSubtext}>Club Coefficients</Text>
+        </View>
+        </View> */}
+
+        {/* Coach Info */}
+        <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Coach</Text>
+        {
+          teamDetail && teamDetail.coach ?
+          (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+            <View style={{ width: 60, height: 60, borderRadius: 30, overflow: 'hidden', backgroundColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' }}>
+              {teamDetail.coach.photo ? (
+              <Image
+                source={{ uri: teamDetail.coach.photo }}
+                style={{ width: 60, height: 60, borderRadius: 30 }}
+                resizeMode="cover"
+              />
+              ) : (
+              <Text style={{ fontSize: 32 }}>👔</Text>
+              )}
+            </View>
+            <View>
+              <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1F2937' }}>
+              {teamDetail.coach.name}
+              </Text>
+              <Text style={{ fontSize: 14, color: '#6B7280' }}>
+              {teamDetail.coach.nationality}
+              </Text>
+              <Text style={{ fontSize: 12, color: '#9CA3AF' }}>
+              Age: {teamDetail.coach.age}
+              </Text>
+            </View>
+            </View>    
+          ) : (
+            <View style={styles.largePlayerCard}>
+            <Text style={{ fontSize: 16, color: '#9CA3AF' }}>No coach information available</Text>
+            </View>
+          )
+          }
+        </View>
+
+
+
+        {/* Squad & Management */}
+        <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Squad & Management</Text>
+        <View style={styles.squadGrid}>
+          {teamDetail.current_squad.map((player, index) => (
+          <TouchableOpacity
+            key={player.id ? `player-${index}`: index}
+            style={styles.playerCard}
+            onPress={() => {
+            navigation.navigate('PlayerDetails', { playerId: player.id });
+            }}
+          >
+            <View style={styles.playerPhoto}>
+            {!player.photo ? (
+            <View style={styles.photoPlaceholder}>
+            <Text style={styles.photoText}>👤</Text>
+            </View>
+            ) : (
+            <Image
+            source={{ uri: player.photo }}
+            style={{ width: '100%', height: '100%' }}
+            resizeMode="cover"
+            />
+            )}
+            </View>
+            <Text style={styles.playerName}>{player.name}</Text>
+            {/* <Text style={styles.playerPosition}>{player.statistics.position}</Text> */}
+          </TouchableOpacity>
+          ))}
+          
+        </View>
+        </View>
+      </ScrollView>
       </SafeAreaView>
     </>
   );

@@ -14,11 +14,14 @@ import {
   Animated,
   ScrollView
 } from 'react-native';
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import MatchCard from '../components/MatchCard';
 import { Match } from '../models/Matches';
 import { getMatchLit } from '../services/matchService';
 import { FixtureResponseDto } from '../dtos/Fixtures';
 import log from '../utils/logger';
+import { addFavourite, Favourite, FavouriteType, getFavourites, removeFavourite } from '../utils/follow';
+import { fixtureDtoToMatch } from '../utils/mappers';
 
 const CALENDAR_SPAN = 60;
 
@@ -83,10 +86,30 @@ const FootballMatchesScreen = () => {
   const [selectedFilters, setSelectedFilters] = useState<GroupFilter[]>([{ name: 'All', id: 0 }]);
   const [showCompetitionModal, setShowCompetitionModal] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [favouriteLeagues, setFavouriteLeagues] = useState<{ [key: number]: boolean }>({});
+
+  useEffect(() => {
+    getFavourites().then((favs: Favourite[]) => {
+      setFavouriteLeagues(
+        favs.filter(fav => {
+              return fav.type === 'league';
+        }).map(fav => fav.id).reduce((acc: { [key: number]: boolean }, id: number) => {
+          acc[id] = true;
+          return acc;
+        }, {} as { [key: number]: boolean })
+      );
+      // const favsMap: { [key: number]: boolean } = {};
+      // favs.forEach(fav => {
+      //   favsMap[fav.id] = true;
+      // });
+      // setFavouriteLeagues(favsMap);
+    });
+  }, []);
+
+  // const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Animated value for filter container height
-  const filterAnim = useRef(new Animated.Value(1)).current; // 1 = expanded, 0 = collapsed
+  // const filterAnim = useRef(new Animated.Value(1)).current; // 1 = expanded, 0 = collapsed
 
   // Update filtered fixtures when filters or allFixtures change
   useEffect(() => {
@@ -126,43 +149,12 @@ const FootballMatchesScreen = () => {
       // Group fixtures by competition
       const grouped: GroupedFixtures = {};
       data.forEach((fixture) => {
-        const homeTeam = {
-          id: fixture.fixture.teams.home.id,
-          name: fixture.fixture.teams.home.name
-        };
-        const awayTeam = {
-          id: fixture.fixture.teams.away.id,
-          name: fixture.fixture.teams.away.name
-        };
-        const homeLogo = fixture.fixture.teams.home.logo ? fixture.fixture.teams.home.logo : '';
-        const awayLogo = fixture.fixture.teams.away.logo ? fixture.fixture.teams.away.logo : '';
-        const homeScore = fixture.fixture.goals.home ? fixture.fixture.goals.home : null;
-        const awayScore = fixture.fixture.goals.away ? fixture.fixture.goals.away : null;
-        const status = fixture.fixture.fixture.status.short;
         const competition = fixture.fixture.league.name || 'Unknown Competition';
         const competitionId = fixture.fixture.league.id || 0; // Assuming league ID is available
-        const channel = 'Sky Sports'; // Placeholder, replace with actual channel data if available
-        const viewers = '180,000'; // Placeholder, replace with actual viewers data if available
-        const time = fixture.fixture.fixture.date ? new Date(fixture.fixture.fixture.date).toLocaleTimeString() : null;
         
         let comp = competitionId || 0;
         grouped[comp] = grouped[comp] || { name: competition, matches: [] };
-        grouped[comp].matches.push({
-          id: fixture.fixture.fixture.id,
-          homeTeam: homeTeam,
-          awayTeam: awayTeam,
-          homeLogo: homeLogo,
-          awayLogo: awayLogo,
-          homeScore: homeScore,
-          awayScore: awayScore,
-          status: status,
-          competition: competition,
-          competitionId: competitionId,
-          channel: channel,
-          viewers: viewers,
-          kickoffTime: fixture.fixture.fixture.date ? new Date(fixture.fixture.fixture.date) : null,
-          time: time,
-        } as Match);
+        grouped[comp].matches.push(fixtureDtoToMatch(fixture));
         });
         setAllGroupedFixtures(grouped);
         
@@ -382,13 +374,51 @@ const FootballMatchesScreen = () => {
         {/* Matches List */}
     <SectionList
       sections={filteredGroups.map(groupId => ({
+        id: groupId,
         title: allGroupedFixtures[groupId].name,
         data: allGroupedFixtures[groupId].matches || [],
       }))}
       keyExtractor={(item) => `${item.competitionId}-${item.id}`}
-      renderSectionHeader={({ section: { title } }) => (
-        <Text style={{ fontWeight: '500', fontSize: 13, color: '#666', marginLeft: 20, marginTop: 20, marginBottom: 8 }}>{title}</Text>
-      )}
+      renderSectionHeader={({ section: { id, title } }) => {
+        let favIconName = favouriteLeagues[Number(id)] ? 'star' : 'star-outline';
+        return (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 20, marginTop: 20, marginBottom: 8 }}>
+            <Text style={{ fontWeight: '500', fontSize: 13, color: '#666', flex: 1 }}>{title}</Text>
+            <TouchableOpacity
+              onPress={async () => {
+                // Import followLeague util function
+                // const { followLeague } = await import('../utils/follow');
+                // Find the groupId for this title
+                // const groupId = Object.keys(allGroupedFixtures).find(
+                //   id => allGroupedFixtures[Number(id)].name === title
+                // );
+                let fav = {
+                    id: Number(id),
+                    type: 'league' as FavouriteType,
+                } as Favourite
+                if (!favouriteLeagues[Number(id)]) {
+                  addFavourite(fav).then(() => {
+                    log.debug(`Added ${title} to favourites`);
+                    // Turn the star icon into a filled star
+                    setFavouriteLeagues(prev => ({ ...prev, [Number(id)]: true }));
+                    favIconName = 'star';
+                  });
+                } else {
+                  removeFavourite(fav).then(() => {
+                    log.debug(`Removed ${title} from favourites`);
+                    // Turn the star icon into an outline star
+                    setFavouriteLeagues(prev => ({ ...prev, [Number(id)]: false }));
+                    favIconName = 'star-outline';
+                  });
+                }
+              }}
+              style={{ padding: 8 }}
+            >
+              <MaterialCommunityIcons name={favIconName} size={24} color={PRIMARY_COLOR} />
+            </TouchableOpacity>
+          </View>
+        );
+    }}
       renderItem={renderMatch}
       // onScroll={handleMatchlistScroll}
     />

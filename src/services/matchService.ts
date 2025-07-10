@@ -37,6 +37,44 @@ export const getMatchLit = async (searchDate: string): Promise<FixtureResponseDt
   }
 }
 
+export const getUpcomingMatches = async (daysAhead: number): Promise<FixtureResponseDto[]> => {
+  try {
+    // const today = new Date();
+    // const targetDate = new Date(today);
+    // targetDate.setDate(today.getDate() + daysAhead);
+    // const yyyy = targetDate.getFullYear();
+    // const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+    // const dd = String(targetDate.getDate()).padStart(2, '0');
+    // const searchDate = `${yyyy}-${mm}-${dd}`;
+    log.debug(`Fetching match list for ${daysAhead} days ahead`);
+    const response = await axios.get<FixtureResponseDto[]>(
+        `https://plapi.mynetworkplace.com/upcoming-matches/${daysAhead}`,
+        // `https://plapi.mynetworkplace.com/today-matches/`,
+        {
+            headers: {
+                "Accept": "application/json"
+            }
+        }
+    );
+    // log.debug(`Received response with status: ${response.status}`);
+    if (!response.status || response.status !== 200) {
+        log.error(`Error fetching match list: ${response.statusText}`);
+        return [];
+    }
+    // TOOD: remove max 1000 cap
+    // Avoid creating a new array with .slice and .map if not needed.
+    // Sort in-place and return the original array to save memory.
+    const resp = response.data.sort(
+      (a: FixtureResponseDto, b: FixtureResponseDto) => a.league_id - b.league_id
+    );
+    log.debug(`Successfully fetched ${resp.length} matches`);
+    return resp;
+  } catch (error) {
+    log.error("Failed to fetch upcoming matches:", error);
+    return [];
+  }
+}
+
 
 export const getFixture = async (fixtureId: number): Promise<FixtureResponseDto | null> => {
   try{

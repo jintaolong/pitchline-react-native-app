@@ -10,6 +10,7 @@ import { MatchStatsDetail } from "../models/Stats";
 import {League} from "../models/Leagues";
 
 import log from "./logger";
+import { Match } from "../models/Matches";
 
 export const fixtureDtoToFixture = (data: FixtureResponseDto) => {
     const kickoffDateObj = new Date(data.fixture.fixture.date);
@@ -51,6 +52,44 @@ export const fixtureDtoToFixture = (data: FixtureResponseDto) => {
     } as Fixture;
 }
 
+
+export const fixtureDtoToMatch = (fixture: FixtureResponseDto) => {
+    const homeTeam = {
+        id: fixture.fixture.teams.home.id,
+        name: fixture.fixture.teams.home.name
+    };
+    const awayTeam = {
+        id: fixture.fixture.teams.away.id,
+        name: fixture.fixture.teams.away.name
+    };
+    const homeLogo = fixture.fixture.teams.home.logo ? fixture.fixture.teams.home.logo : '';
+    const awayLogo = fixture.fixture.teams.away.logo ? fixture.fixture.teams.away.logo : '';
+    const homeScore = fixture.fixture.goals.home ? fixture.fixture.goals.home : null;
+    const awayScore = fixture.fixture.goals.away ? fixture.fixture.goals.away : null;
+    const status = fixture.fixture.fixture.status.short;
+    const competition = fixture.fixture.league.name || 'Unknown Competition';
+    const competitionId = fixture.fixture.league.id || 0; // Assuming league ID is available
+    const channel = 'Sky Sports'; // Placeholder, replace with actual channel data if available
+    const viewers = '180,000'; // Placeholder, replace with actual viewers data if available
+    const time = fixture.fixture.fixture.date ? new Date(fixture.fixture.fixture.date).toLocaleTimeString() : null;
+
+    return {
+        id: fixture.fixture.fixture.id,
+        homeTeam: homeTeam,
+        awayTeam: awayTeam,
+        homeLogo: homeLogo,
+        awayLogo: awayLogo,
+        homeScore: homeScore,
+        awayScore: awayScore,
+        status: status,
+        competition: competition,
+        competitionId: competitionId,
+        channel: channel,
+        viewers: viewers,
+        kickoffTime: fixture.fixture.fixture.date ? new Date(fixture.fixture.fixture.date) : null,
+        time: time,
+    } as Match;
+}
 
 export const lineUpDtoToLineupPlayer = (data: LineupDto) => {
     // return data.startXI.map(player => ({
