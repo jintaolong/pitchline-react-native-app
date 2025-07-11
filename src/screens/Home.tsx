@@ -1,16 +1,14 @@
-import { JSX, useEffect } from 'react';
-import { useState } from 'react'
-import { View, Text, FlatList, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, SectionList, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Match } from '../models/Matches';
 import MatchCard from '../components/MatchCard';
-import TopSearchBar from '../components/TopSearchBar';
+import TopSearchBar, { SearchItem } from '../components/TopSearchBar';
 import { Favourite, getFavourites } from '../utils/follow';
 import { useIsFocused } from '@react-navigation/native';
 import { getUpcomingMatches } from '../services/matchService';
 import { FixtureResponseDto } from '../dtos/Fixtures';
 import { fixtureDtoToMatch } from '../utils/mappers';
-import { SectionList } from 'react-native';
 import { getTeamDetails } from '../services/teamService';
 import { useNavigation } from '@react-navigation/native';
 import log from '../utils/logger';
@@ -26,8 +24,10 @@ const UPCOMING_GAME_DAY_SPAN = 3;
 //   logo: string;
 // }
 
-export default function HomeScreen(): JSX.Element {
-  
+const searchData: SearchItem[] = require('../../assets/data/search_data.json');
+
+const HomeScreen = () => {
+  log.debug(searchData.at(0));
   const navigation = useNavigation();
 
   const updateMaps = (favs: Favourite[]) => {
@@ -50,6 +50,7 @@ export default function HomeScreen(): JSX.Element {
   const [leagueMap, setLeagueMap] = useState<number[]>([]);
   const [favTeamHasMatch, setFavTeamHasMatch] = useState<{ [teamId: number]: boolean }>({});
   const [noMatchTeams, setNoMatchTeams] = useState<Team[]>([]);
+  const [activeTab, setActiveTab] = useState<'teams' | 'leagues'>('teams');
   // const [noMatchLeagues, setNoMatchLeagues] = useState<NoMatchTeamOrLeagues[]>([]);
 
   const renderMatch = ({ item }: { item: Match }) => (
@@ -62,7 +63,35 @@ export default function HomeScreen(): JSX.Element {
   
   // Dummy fetchSuggestions implementation
   const fetchSuggestions = async (query: string) => {
-    return [];
+    log.debug(`Fetching suggestions for query: ${query}`);
+    log.debug(`Total search data items: ${searchData.length}`);
+    // Use a simple in-memory index for prefix search to improve performance
+    // Build a Map from first letter to array of items for quick narrowing
+    const [searchIndex, setSearchIndex] = useState<Map<string, SearchItem[]>>(new Map());
+
+    useEffect(() => {
+      // Build the index once on mount
+      const index = new Map<string, SearchItem[]>();
+      for (const item of searchData) {
+        const first = item.name[0]?.toLowerCase() || '';
+        if (!index.has(first)) index.set(first, []);
+        index.get(first)!.push(item);
+      }
+      setSearchIndex(index);
+    }, []);
+
+    let result: SearchItem[] = [];
+    if (query.length > 0) {
+      const first = query[0].toLowerCase();
+      const candidates = searchIndex.get(first) || [];
+      result = candidates.filter(item =>
+        item.name.toLowerCase().startsWith(query.toLowerCase())
+      );
+    } else {
+      result = [];
+    }
+    log.debug(`Fetched ${result.length} results for query: ${query}`);
+    return result;
   };
 
   useEffect(() => {
@@ -185,99 +214,143 @@ export default function HomeScreen(): JSX.Element {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <TopSearchBar fetchSuggestions={fetchSuggestions} />
-      <ScrollView style={styles.content}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', height: 24, marginVertical: 24, marginHorizontal: 20 }}>
-          <View style={{ flex: 1, height: 1, backgroundColor: '#ddd' }} />
-          <Text style={{ marginHorizontal: 8, fontWeight: '500', fontSize: 13, color: '#666' }}>
-            Teams
-          </Text>
-          <View style={{ flex: 1, height: 1, backgroundColor: '#ddd' }} />
-        </View>
-        <SectionList
-              sections={
-            Object.entries(teamMatches).map(([teamId, { name, matches }]) => ({
+
+      {/* Tabs */}
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'teams' && styles.activeTab]}
+          onPress={() => setActiveTab('teams')}
+        >
+          <Text style={[styles.tabText, activeTab === 'teams' && styles.activeTabText]}>Teams</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'leagues' && styles.activeTab]}
+          onPress={() => setActiveTab('leagues')}
+        >
+          <Text style={[styles.tabText, activeTab === 'leagues' && styles.activeTabText]}>Leagues</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Tab Content */}
+      {activeTab === 'teams' ? (
+        <View>
+          <SectionList
+            sections={Object.entries(teamMatches).map(([teamId, { name, matches }]) => ({
               title: name || `Team ${teamId}`,
               data: matches,
               key: `team-${teamId}`,
-            }))
-              }
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={renderMatch}
-              renderSectionHeader={({ section: { title } }) => (
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 20, marginTop: 20, marginBottom: 8 }}>
-                <Text style={{ fontWeight: '500', fontSize: 13, color: '#666', flex: 1 }}>{title}</Text>
+            }))}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderMatch}
+            renderSectionHeader={({ section: { title } }) => (
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionHeaderText}>{title}</Text>
               </View>
-              )}
-              ListEmptyComponent={
-            <Text style={{ textAlign: 'center', marginTop: 40 }}>
-              No upcoming fixtures for your favourite teams.
-            </Text>
-              }
-              stickySectionHeadersEnabled={false}
-        />
-        {noMatchTeams.length > 0 && (
+            )}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>
+                No upcoming fixtures for your favourite teams.
+              </Text>
+            }
+            stickySectionHeadersEnabled={false}
+          />
+          {noMatchTeams.length > 0 && (
             <View>
-            <Text style={{ marginLeft: 20, marginTop: 20, marginBottom: 8, fontWeight: '500', fontSize: 13, color: '#666' }}>
-              No upcoming matches
-            </Text>
-            <FlatList
-              data={noMatchTeams}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={renderTeam}
-              // horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 20 }}
-            />
+              <Text style={styles.noMatchTitle}>No upcoming matches</Text>
+              <FlatList
+                data={noMatchTeams}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderTeam}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 20 }}
+              />
             </View>
-        )}
-        <View style={{ flexDirection: 'row', alignItems: 'center', height: 24, marginVertical: 24, marginHorizontal: 20 }}>
-          <View style={{ flex: 1, height: 1, backgroundColor: '#ddd' }} />
-          <Text style={{ marginHorizontal: 8, fontWeight: '500', fontSize: 13, color: '#666' }}>
-            Leagues
-          </Text>
-          <View style={{ flex: 1, height: 1, backgroundColor: '#ddd' }} />
+          )}
         </View>
+      ) : (
         <SectionList
-          sections={
-        Object.entries(leagueMatches).map(([leagueId, { name, matches }]) => ({
-          title: name || `League ${leagueId}`,
-          data: matches,
-          key: `league-${leagueId}`,
-        }))
-          }
+          sections={Object.entries(leagueMatches).map(([leagueId, { name, matches }]) => ({
+            title: name || `League ${leagueId}`,
+            data: matches,
+            key: `league-${leagueId}`,
+          }))}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderMatch}
           renderSectionHeader={({ section: { title } }) => (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 20, marginTop: 20, marginBottom: 8 }}>
-            <Text style={{ fontWeight: '500', fontSize: 13, color: '#666', flex: 1 }}>{title}</Text>
-          </View>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionHeaderText}>{title}</Text>
+            </View>
           )}
           ListEmptyComponent={
-        <Text style={{ textAlign: 'center', marginTop: 40 }}>
-          No upcoming fixtures for your favourite leagues.
-        </Text>
+            <Text style={styles.emptyText}>
+              No upcoming fixtures for your favourite leagues.
+            </Text>
           }
           stickySectionHeadersEnabled={false}
         />
-      </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-  },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
     zIndex: 10,
   },
-  sectionHeader: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#000000',
-    marginBottom: 12,
+  tabBar: {
+    flexDirection: 'row',
     marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 8,
+    borderRadius: 8,
+    backgroundColor: '#eee',
+    overflow: 'hidden',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  activeTab: {
+    backgroundColor: '#fff',
+  },
+  tabText: {
+    fontWeight: '500',
+    fontSize: 16,
+    color: '#666',
+  },
+  activeTabText: {
+    color: '#6B73FF',
+    fontWeight: '700',
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 20,
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  sectionHeaderText: {
+    fontWeight: '500',
+    fontSize: 13,
+    color: '#666',
+    flex: 1,
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 40,
+    color: '#888',
+  },
+  noMatchTitle: {
+    marginLeft: 20,
+    marginTop: 20,
+    marginBottom: 8,
+    fontWeight: '500',
+    fontSize: 13,
+    color: '#666',
   },
 });
+
+export default HomeScreen;

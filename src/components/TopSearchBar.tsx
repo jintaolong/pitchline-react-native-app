@@ -15,10 +15,14 @@ ScrollView,
 SectionList,
 Dimensions,
 } from 'react-native';
-import { mockTopSearchData } from '../utils/mocks';
+// import { mockTopSearchData } from '../utils/mocks';
 import log from '../utils/logger';
+// import { mockTopSearchData } from '../utils/mocks';
+// import myData from '../assets/data/yourfile.json';
 
-type SearchItem = {
+// or
+
+export type SearchItem = {
     id: number;
     type: string; // 'league' | 'team' | 'player'
     name: string;
@@ -55,13 +59,18 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({ fetchSuggestions }) => {
     const handleChange = async (text: string) => {
         setQuery(text);
         if (text.length > 1) {
-            // const results = await fetchSuggestions(text);
-            const results = mockTopSearchData;
-            const filteredResults = results.filter(item =>
-                item.name.toLowerCase().includes(text.toLowerCase())
-            );
-            setSuggestions(filteredResults);
-            setShowSuggestions(true);
+            fetchSuggestions(text).then((filteredResults) => {
+                log.debug(`Fetched ${filteredResults.length} results for query: ${text}`)
+                // Filter results based on the query;
+                // const filteredResults = searchData.filter(item =>
+                //     item.name.toLowerCase().includes(text.toLowerCase())
+                // );
+                // log.debug(`Filtered results: ${filteredResults.length} items found`);        
+                // const searchData = mockTopSearchData;
+               log.debug(`Fetched ${filteredResults.length} results for query: ${text}`);
+                setSuggestions(filteredResults);
+                setShowSuggestions(true);
+            });
         } else {
             setSuggestions([]);
             setShowSuggestions(false);

@@ -380,41 +380,39 @@ const FootballMatchesScreen = () => {
       }))}
       keyExtractor={(item) => `${item.competitionId}-${item.id}`}
       renderSectionHeader={({ section: { id, title } }) => {
-        let favIconName = favouriteLeagues[Number(id)] ? 'star' : 'star-outline';
+        let favIconName = favouriteLeagues[Number(id)] ? 'bell-minus' : 'bell-plus-outline';
         return (
           <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 20, marginTop: 20, marginBottom: 8 }}>
             <Text style={{ fontWeight: '500', fontSize: 13, color: '#666', flex: 1 }}>{title}</Text>
             <TouchableOpacity
               onPress={async () => {
-                // Import followLeague util function
-                // const { followLeague } = await import('../utils/follow');
-                // Find the groupId for this title
-                // const groupId = Object.keys(allGroupedFixtures).find(
-                //   id => allGroupedFixtures[Number(id)].name === title
-                // );
-                let fav = {
-                    id: Number(id),
-                    type: 'league' as FavouriteType,
-                } as Favourite
-                if (!favouriteLeagues[Number(id)]) {
-                  addFavourite(fav).then(() => {
-                    log.debug(`Added ${title} to favourites`);
-                    // Turn the star icon into a filled star
-                    setFavouriteLeagues(prev => ({ ...prev, [Number(id)]: true }));
-                    favIconName = 'star';
-                  });
-                } else {
-                  removeFavourite(fav).then(() => {
-                    log.debug(`Removed ${title} from favourites`);
-                    // Turn the star icon into an outline star
-                    setFavouriteLeagues(prev => ({ ...prev, [Number(id)]: false }));
-                    favIconName = 'star-outline';
-                  });
-                }
+              let fav = {
+                id: Number(id),
+                type: 'league' as FavouriteType,
+              } as Favourite;
+              if (!favouriteLeagues[Number(id)]) {
+                addFavourite(fav).then(() => {
+                log.debug(`Added ${title} to favourites`);
+                setFavouriteLeagues(prev => ({ ...prev, [Number(id)]: true }));
+                });
+              } else {
+                removeFavourite(fav).then(() => {
+                log.debug(`Removed ${title} from favourites`);
+                setFavouriteLeagues(prev => ({ ...prev, [Number(id)]: false }));
+                });
+              }
               }}
-              style={{ padding: 8 }}
+              style={{
+              padding: 0,
+              marginRight: 15,
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: 30,
+              width: 30,
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <MaterialCommunityIcons name={favIconName} size={24} color={PRIMARY_COLOR} />
+              <MaterialCommunityIcons name={favIconName} size={18} color={PRIMARY_COLOR} />
             </TouchableOpacity>
           </View>
         );
