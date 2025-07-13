@@ -27,7 +27,7 @@ type ValveSelectorProp = {
 
 const ValveSelector: React.FC<ValveSelectorProp> = ({onChange}) => {
     const [selectedIndex, setSelectedIndex] = useState(0);
-    const flatListRef = useRef<FlatList>(null);
+    // const flatListRef = useRef<FlatList>(null);
 
     // Animate thumb position
     const animatedValue = useRef(new Animated.Value(0)).current;
@@ -40,7 +40,7 @@ const ValveSelector: React.FC<ValveSelectorProp> = ({onChange}) => {
             friction: 7,
             tension: 80,
         }).start();
-        flatListRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
+        // flatListRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
         log.debug(`Current selected index ${selectedIndex}`);
         onChange(
             PERIOD_OPTIONS.filter((item) => {

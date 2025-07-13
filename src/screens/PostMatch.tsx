@@ -14,8 +14,8 @@ import {
 import { getEvents, getFixture, getFixtureStats, getMatchLineups } from '../services/matchService';
 import { Lineup, LineupPlayer } from '../models/Lineups';
 import { Fixture } from '../models/Fixtures';
-import { MatchStats, MatchStatsDetail, Stats, WordCloudEntry } from '../models/Stats';
-import { FixtureDto, FixtureResponseDto } from '../dtos/Fixtures';
+import { MatchStats, WordCloudEntry } from '../models/Stats';
+import { FixtureResponseDto } from '../dtos/Fixtures';
 import log from '../utils/logger';
 import { fixtureDtoToFixture, lineUpDtoToLineupPlayer, teamMatchStatDtoToMatchStatsDetail, leagueStandingDtoToLeague } from '../utils/mappers';
 import { LineupsResponseDto } from '../dtos/Lineups';
@@ -29,8 +29,9 @@ import PitchLineStartingXI from '../components/StartingXI';
 import PitchLineStandingTable from '../components/StandingTable';
 import { getLeagueStanding } from '../services/teamService';
 import { LeagueStandingDto } from '../dtos/Leagues';
-import { League, Standing } from '../models/Leagues';
+import { Standing } from '../models/Leagues';
 import { globalStyles } from '../styles/globalStyles';
+import { mockEmptyFixture, mockEmptyStats } from '../utils/mocks';
 
 const { width } = Dimensions.get('window');
 
@@ -50,11 +51,11 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
   const { fixtureId } = route.params; // Get fixtureId from route params
   const [activeTab, setActiveTab] = useState('Live');
 
-  const [fixture, setFixture] = useState<Fixture | null>(null);
+  const [fixture, setFixture] = useState<Fixture | null>(mockEmptyFixture());
   const [standing, setStanding] = useState<Standing[]>([]);
   const [homeLineup, setHomeLineup] = useState<Lineup | null>(null);
   const [awayLineup, setAwayLineup] = useState<Lineup | null>(null);
-  const [stats, setStats] = useState<MatchStats | null>(null);
+  const [stats, setStats] = useState<MatchStats>(mockEmptyStats());
   const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
   const [wordCloudWords, setWordCloudWords] = useState<WordCloudEntry[]>([]);
 
@@ -320,78 +321,97 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Stats</Text>
             
+            {Object.values(stats.home).every(val => val === -1) && Object.values(stats.away).every(val => val === -1) ? (
+              <Text style={globalStyles.emptyListText}>No stats available for this match.</Text>
+            ) : null}
+
             {/* Possession */}
-            <View style={styles.statRow}>
+            {stats?.home.ballPossession !== -1 && stats?.away.ballPossession !== -1 && (
+              <View style={styles.statRow}>
               <Text style={styles.statLabel}>Possession</Text>
               <PitchlinePieChart
-                  data={[
-                    {
-                      key: fixture?.homeTeam.name || 'Home',
-                      value: stats?.home.ballPossession || 0,
-                      svg: { fill: '#6366F1' },
-                    },
-                    {
-                      key: fixture?.awayTeam.name || 'Away',
-                      value: stats?.away.ballPossession || 0,
-                      svg: { fill: '#3B82F6' },
-                    },
-                  ]}
+                data={[
+                {
+                  key: fixture?.homeTeam.name || 'Home',
+                  value: stats?.home.ballPossession,
+                  svg: { fill: '#6366F1' },
+                },
+                {
+                  key: fixture?.awayTeam.name || 'Away',
+                  value: stats?.away.ballPossession,
+                  svg: { fill: '#3B82F6' },
+                },
+                ]}
                 radius={50}
               />
-            </View>
+              </View>
+            )}
 
             {/* Shots on target */}
-            <View style={styles.statRow}>
+            {stats?.home.shotsOnGoal !== -1 && stats?.away.shotsOnGoal !== -1 && (
+              <View style={styles.statRow}>
               <Text style={styles.statLabel}>Shots on target</Text>
               <PitchlineComparisonBarChart
-                  a={stats?.home.shotsOnGoal || 0}
-                  b={stats?.away.shotsOnGoal || 0}
+                a={stats?.home.shotsOnGoal}
+                b={stats?.away.shotsOnGoal}
               />
-            </View>
+              </View>
+            )}
 
             {/* Shots off target */}
-            <View style={styles.statRow}>
+            {stats?.home.shotsOffGoal !== -1 && stats?.away.shotsOffGoal !== -1 && (
+              <View style={styles.statRow}>
               <Text style={styles.statLabel}>Shots off target</Text>
               <PitchlineComparisonBarChart
-                  a={stats?.home.shotsOffGoal || 0}
-                  b={stats?.away.shotsOffGoal || 0}
+                a={stats?.home.shotsOffGoal}
+                b={stats?.away.shotsOffGoal}
               />
-            </View>
+              </View>
+            )}
+
             {/* Total Shots */}
-            <View style={styles.statRow}>
+            {stats?.home.totalShots !== -1 && stats?.away.totalShots !== -1 && (
+              <View style={styles.statRow}>
               <Text style={styles.statLabel}>Total shots</Text>
               <PitchlineComparisonBarChart
-                a={stats?.home.totalShots || 0}
-                b={stats?.away.totalShots || 0}
+                a={stats?.home.totalShots}
+                b={stats?.away.totalShots}
               />
-            </View>
+              </View>
+            )}
 
             {/* Corners */}
-            <View style={styles.statRow}>
+            {stats?.home.cornerKicks !== -1 && stats?.away.cornerKicks !== -1 && (
+              <View style={styles.statRow}>
               <Text style={styles.statLabel}>Corners</Text>
               <PitchlineComparisonBarChart
-                a={stats?.home.cornerKicks || 0}
-                b={stats?.away.cornerKicks || 0}
+                a={stats?.home.cornerKicks}
+                b={stats?.away.cornerKicks}
               />
-            </View>
+              </View>
+            )}
 
             {/* Fouls */}
-            <View style={styles.statRow}>
+            {stats?.home.fouls !== -1 && stats?.away.fouls !== -1 && (
+              <View style={styles.statRow}>
               <Text style={styles.statLabel}>Fouls</Text>
               <PitchlineComparisonBarChart
-                a={stats?.home.fouls || 0}
-                b={stats?.away.fouls || 0}
+                a={stats?.home.fouls}
+                b={stats?.away.fouls}
               />
-            </View>
+              </View>
+            )}
 
             {/* Cards */}
-            <View style={styles.statRow}>
+            {(stats?.home.yellowCards !== -1 && stats?.away.yellowCards !== -1 && stats?.home.redCards !== -1 && stats?.away.redCards !== -1) && (
+              <View style={styles.statRow}>
               <Text style={styles.statLabel}>Cards</Text>
               <PitchlineComparisonBarChart
-                a={(stats?.home.yellowCards || 0) + (stats?.home.redCards || 0)}
-                b={(stats?.away.yellowCards || 0) + (stats?.away.redCards || 0)}
+                a={(stats?.home.yellowCards) + (stats?.home.redCards)}
+                b={(stats?.away.yellowCards) + (stats?.away.redCards)}
               />
-            </View>
+              </View>
+            )}
           </View>
 
           {/* Timeline Tabs */}
@@ -413,27 +433,35 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
           {/* Match Timeline */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Match Timeline</Text>
+          {matchEvents.length === 0 ? (
+            <Text style={globalStyles.emptyListText}>Not available for this match.</Text>
+          ) : (
             <PitchLineTimeline
               matchEvents={matchEvents}
-            /> 
+            />
+          )}
           </View>
 
           {/* Commentary Word Cloud */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Commentary word cloud</Text>
-            <View style={styles.wordCloud}>
+            {wordCloudWords.length > 0 && matchEvents.length > 0 ? (
+              <View style={styles.wordCloud}>
               {wordCloudWords.map((word, index) => (
-                <Text 
-                  key={index} 
-                  style={[
-                    styles.wordCloudText, 
-                    { fontSize: word.size, color: word.color }
-                  ]}
+                <Text
+                key={index}
+                style={[
+                  styles.wordCloudText,
+                  { fontSize: word.size, color: word.color }
+                ]}
                 >
-                  {word.text}
+                {word.text}
                 </Text>
               ))}
-            </View>
+              </View>
+            ) : (
+              <Text style={globalStyles.emptyListText}>Not available for this match.</Text>
+            )}
           </View>
 
           {/* Starting XI */}
@@ -456,19 +484,23 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
           {/* Standings */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Standings</Text>
-            <PitchLineStandingTable 
-              standings={standing}
-              teamId={fixture?.homeTeam.teamId || undefined}
-              teamAwayId={fixture?.awayTeam.teamId || undefined}
-              onPress={(id: number) => {
-                navigation.navigate('TeamDetails', { teamId : id });
-              }}
-            />
-            <Text style={globalStyles.footNotes}>
-              Last updated: {standing && standing.length > 0 && standing[0].lastUpdated
-                ? standing[0].lastUpdated
-                : 'N/A'}
-            </Text>
+            {standing && standing.length > 0 ? (
+              <>
+                <PitchLineStandingTable 
+                  standings={standing}
+                  teamId={fixture?.homeTeam.teamId || undefined}
+                  teamAwayId={fixture?.awayTeam.teamId || undefined}
+                  onPress={(id: number) => {
+                    navigation.navigate('TeamDetails', { teamId: id });
+                  }}
+                />
+                <Text style={globalStyles.footNotes}>
+                  Last updated: {standing[0].lastUpdated ? standing[0].lastUpdated : 'N/A'}
+                </Text>
+              </>
+            ) : (
+              <Text style={globalStyles.emptyListText}>Not available for this match.</Text>
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>

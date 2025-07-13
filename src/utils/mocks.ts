@@ -1,93 +1,197 @@
+import { CoachCareerDto, TeamDto } from "../dtos/Teams";
+import { Fixture, Team, Venue } from "../models/Fixtures";
 import { Player, PlayerStats } from "../models/Players";
+import { MatchStats, MatchStatsDetail } from "../models/Stats";
+
+export const mockEmptyFixture = (): Fixture => ({
+    league: {
+      id: 0,
+      name: 'Unknown League',
+      logoUrl: '', // No logo available
+    },
+    kickoffDate: 'Date TBA', // Placeholder for unknown date
+    kickoffTime: 'Time TBA', // Placeholder for unknown time
+    venue: {
+      name: 'Unknown Venue',
+      city: 'Unknown City',
+    } as Venue,
+    homeTeam: {
+      name: 'Unknown Home Team',
+      teamId: 0,
+      logoUrl: '', // No logo available
+      short: 'HOME', // Optional: short name placeholder
+    } as Team,
+    awayTeam: {
+      name: 'Unknown Away Team',
+      teamId: 0,
+      logoUrl: '', // No logo available
+      short: 'AWAY', // Optional: short name placeholder
+    } as Team,
+});
+
+export const mockEmptyStats = () => ({
+    home: {
+        shotsOnGoal: -1,
+        shotsOffGoal: -1,
+        totalShots: -1,
+        blockedShots: -1,
+        shotsInsideBox: -1,
+        shotsOutsideBox: -1,
+        fouls: -1,
+        cornerKicks: -1,
+        offsides: -1,
+        ballPossession: -1,
+        yellowCards: -1,
+        redCards: -1,
+        goalkeeperSaves: -1,
+        totalPasses: -1,
+        passesAccurate: -1,
+        passesPercentage: -1,
+        expectedGoals: "-1",
+        goalsPrevented: -1,
+    } as MatchStatsDetail,
+    away: {
+        shotsOnGoal: -1,
+        shotsOffGoal: -1,
+        totalShots: -1,
+        blockedShots: -1,
+        shotsInsideBox: -1,
+        shotsOutsideBox: -1,
+        fouls: -1,
+        cornerKicks: -1,
+        offsides: -1,
+        ballPossession: -1,
+        yellowCards: -1,
+        redCards: -1,
+        goalkeeperSaves: -1,
+        totalPasses: -1,
+        passesAccurate: -1,
+        passesPercentage: -1,
+        expectedGoals: "-1",
+        goalsPrevented: -1,
+    } as MatchStatsDetail,
+} as MatchStats);
 
 export const mockPlayer = (): Player => {
     return {
         info: {
-            name: 'Lionel Messi',
-            age: 34,
-            position: 'Forward',
-            nationality: 'Argentinian',
-            height: '1.70m',
-            weight: '72kg',
-            photo: 'https://example.com/messi.jpg',
+            name: 'Unknown name',
+            age: -1,
+            position: 'Unknown position',
+            nationality: 'Unknown nationality',
+            height: 'Unknown height',
+            weight: 'Unknown weight',
+            photo: 'Unknown photo',
             birth: {
-                date: '1987-06-24',
-                place: 'Rosario',
-                country: 'Argentina'
+                date: 'Unknown birth date',
+                place: 'Unknown birth place',
+                country: 'Unknown birth country'
             },
             teams: [],
             leagues: [],
             footballAPRating: {
-                overall: 94,
-                potential: 94,
-                season: new Date().getFullYear(),
+                overall: -1,
+                potential: -1,
+                season: -1,
                 league: {
-                    id: 1,
-                    name: 'Ligue 1',
-                    logo: 'https://example.com/ligue1.jpg',
-                    country: 'France',
-                    flag: 'https://example.com/france_flag.jpg',
-                    season: new Date().getFullYear(),
+                    id: -1,
+                    name: 'Unknown league name',
+                    logo: 'Unknown league logo',
+                    country: 'Unknown league country',
+                    flag: 'Unknown league flag',
+                    season: -1,
                 },
             },
         },
         careerTimeline: [],
         stats: {
             games: {
-                appearences: 30,
-                lineups: 25,
-                minutes: 2250,
-                number: 10,
-                position: 'Forward',
-                rating: 8.5,
-                captain: true,
+                appearences: -1,
+                lineups: -1,
+                minutes: -1,
+                number: -1,
+                position: 'Unknown games position',
+                rating: -1,
+                captain: false,
             },
             substitutes: {
-                in: 5,
-                out: 10,
-                bench: 2,
+                in: -1,
+                out: -1,
+                bench: -1,
             },
             shots: {
-                total: 100,
-                on: 60,
+                total: -1,
+                on: -1,
             },
             goals: {
-                total: 30,
-                assists: 12,
+                total: -1,
+                assists: -1,
             },
             passes: {
-                total: 2000,
-                key: 80,
+                total: -1,
+                key: -1,
             },
             tackles: {
-                total: 40,
-                successful: 30,
+                total: -1,
+                successful: -1,
             },
             duels: {
-                total: 150,
-                won: 100,
+                total: -1,
+                won: -1,
             },
             dribbles: {
-                total: 120,
-                successful: 90,
+                total: -1,
+                successful: -1,
             },
             fouls: {
-                total: 15,
-                committed: 10,
+                total: -1,
+                committed: -1,
             },
             cards: {
-                yellow: 3,
-                red: 0,
+                yellow: -1,
+                red: -1,
             },
             penalty: {
-                won: 5,
-                scored: 4,
-                missed: 1,
+                won: -1,
+                scored: -1,
+                missed: -1,
             },
         } as PlayerStats,
     };
 }
 
+export const mockTeamDetails = (): TeamDto => {
+    return {
+        _id: 'team_unknown_001',
+        team_id: 0,
+        team_name: 'Unknown Team',
+        coach: {
+            id: 0,
+            name: 'Unknown Coach',
+            firstname: 'Unknown',
+            lastname: 'Unknown',
+            age: -1,
+            nationality: 'Unknown',
+            photo: '',
+            height: "",
+            weight: "",
+            team: {
+                id: 0,
+                name: 'Unknown Team',
+                logo: '',
+            },
+            birth: {
+                date: '',
+                place: 'Unknown',
+                country: 'Unknown',
+            },
+            career: []
+        },
+        current_squad: [],
+        past_fixtures: [],
+        future_fixtures: []
+    }
+}
 
 export const mockTopSearchData = [
         {

@@ -18,6 +18,7 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import { mockPlayer } from '../utils/mocks';
 import { useState } from 'react';
 import PitchLinePlayerStats from '../components/PlayerStats';
+import { globalStyles } from '../styles/globalStyles';
 
 const { width } = Dimensions.get('window');
 
@@ -169,24 +170,6 @@ const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
     });
   }, [playerId]);
 
-  // const achievements = [
-  //   { title: 'Ballon d\'Or', icon: '🏆', color: '#F59E0B', count: null },
-  //   { title: 'The Best FIFA Men\'s Player', icon: '🥇', color: '#3B82F6', count: 'x2' },
-  //   { title: 'FIFA World Cup', subtitle: '2022', icon: '🏆', color: '#10B981', count: null },
-  //   { title: 'Champions League', icon: '🏆', color: '#8B5CF6', count: 'x4' },
-  //   { title: 'La Liga Title', icon: '🛡️', color: '#EF4444', count: 'x10' },
-  //   { title: 'European Golden Shoe', icon: '👟', color: '#F59E0B', count: 'x6' }
-  // ];
-
-  // const radarData = [
-  //   { attribute: 'Pace', value: 85 },
-  //   { attribute: 'Shooting', value: 95 },
-  //   { attribute: 'Checking', value: 90 },
-  //   { attribute: 'Dribbling', value: 98 },
-  //   { attribute: 'Defending', value: 40 },
-  //   { attribute: 'Physical', value: 75 }
-  // ];
-
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -328,7 +311,8 @@ const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
           {/* Career Timeline */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Career Timeline</Text>
-            <View style={styles.timeline}>
+            {player.careerTimeline && player.careerTimeline.length > 0 ? (
+                          <View style={styles.timeline}>
               {player.careerTimeline?.map((career, index) => (
                 <View key={index} style={styles.timelineItem}>
                   <View style={[styles.timelineDot, career.isActive && styles.activeTimelineDot]} />
@@ -356,6 +340,12 @@ const PlayerDetailsScreen = ({playerId}: {playerId: number}) => {
                 </View>
               ))}
             </View>
+            ) : (
+              <View style={globalStyles.emptyListText}>
+                <Text style={globalStyles.emptyListText}>Not Available</Text>
+              </View>
+            )}
+
           </View>
 
           

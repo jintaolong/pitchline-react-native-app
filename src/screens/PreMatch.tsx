@@ -37,6 +37,7 @@ import PitchLineStandingTable from '../components/StandingTable';
 import { Standing } from '../models/Leagues';
 import { LeagueStandingDto } from '../dtos/Leagues';
 import { globalStyles } from '../styles/globalStyles';
+import { mockEmptyFixture } from '../utils/mocks';
 
 type PreMatchDetailsScreenRouteProp = RouteProp<{ params: { fixtureId: number } }, 'params'>;
 
@@ -44,45 +45,20 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
   const navigation = useNavigation();
   const {fixtureId} = route.params;
   log.debug(`PreMatchDetailsScreen: fixtureId=${fixtureId}`);
-
-  const summaryOptions = [
-    { label: '1 Month', value: 1 },
-    { label: '3 Months', value: 3 },
-    { label: '6 Months', value: 6 },
-    { label: '1 Year', value: 12 },
-    { label: '2 Years', value: 24 },
-    // { label: 'Last 5 Years', value: 60 },
-    // { label: 'Last 10 Years', value: 120 },
-  ];
-
-  // const [summaryWindow, setSummaryWindow] = useState(3); // Default: last 3 months
+  const [fixture, setFixture] = useState<Fixture>(mockEmptyFixture());
+  const [h2hResults, setH2hResults] = useState<H2HResults[]>([]);
   const [homeLineup, setHomeLineup] = useState<Lineup | null>(null);
   const [awayLineup, setAwayLineup] = useState<Lineup | null>(null);
-  // const homeLineup : LineupPlayer[] = [];
-  // const awayLineup: LineupPlayer[] = [];
-  const [fixture, setFixture] = useState<Fixture>({
-    league: {
-      id: 0,
-      name: '',
-      logoUrl: ''
-    },
-    kickoffDate: '',
-    kickoffTime: '',
-    venue: {
-      name: '',
-      city: ''
-    } as Venue,
-    homeTeam: {
-      name: 'Home',
-      teamId: 0,
-      logoUrl: '',
-    } as Team,
-    awayTeam: {
-      name: 'Away',
-      teamId: 0,
-      logoUrl: '',
-    } as Team
-  });
+  const [statsWindow, setStatsWindow] = useState(1);
+  const [stats, setStats] = useState<Stats>({
+    homeWin: -1,
+    homeDraw: -1,
+    homeLost: -1,
+    homeGoals: -1,
+    awayGoals: -1,
+    homeShots: -1,
+    awayShots: -1,
+  } as Stats);
   const [standing, setStanding] = useState<Standing[]>([]);
 
   React.useEffect(() => {
@@ -113,8 +89,6 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
     });
   }, [fixtureId]);
 
-  const [h2hResults, setH2hResults] = useState<H2HResults[]>([]);
-
   React.useEffect(() => {
     getH2HResults(fixture.homeTeam.teamId, fixture.awayTeam.teamId).then(
     (data: ResultsDto | null) => {
@@ -141,57 +115,33 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
   }, [fixtureId]);
 
   React.useEffect(() => {
-if(fixture){
-    log.debug(`PostMatch: Fetching league standings for fixture: ${fixture.league.id} in year ${new Date().getFullYear()}`);
-      getLeagueStanding(fixture.league.id, new Date().getFullYear()).then((data: LeagueStandingDto | null) => {
-      if(!!data){
-        let league = leagueStandingDtoToLeague(data) || null;
-        league 
-          && league.currentStandings 
-          && league.currentStandings.length > 0 
-          && league.currentStandings.filter((standing: Standing[], index) => {
-            let leagueName = `Unknown League ${index + 1}`;
-            if (standing.length > 0) {
-              leagueName = standing[0].group;
-              if (leagueName === 'Domestic League') {
-                return true;
-              }
+    if(fixture){
+        log.debug(`PostMatch: Fetching league standings for fixture: ${fixture.league.id} in year ${new Date().getFullYear()}`);
+          getLeagueStanding(fixture.league.id, new Date().getFullYear()).then((data: LeagueStandingDto | null) => {
+          if(!!data){
+            let league = leagueStandingDtoToLeague(data) || null;
+            league 
+              && league.currentStandings 
+              && league.currentStandings.length > 0 
+              && league.currentStandings.filter((standing: Standing[], index) => {
+                let leagueName = `Unknown League ${index + 1}`;
+                if (standing.length > 0) {
+                  leagueName = standing[0].group;
+                  if (leagueName === 'Domestic League') {
+                    return true;
+                  }
+                }
+            });
+            if (league && league.currentStandings.length > 0) {
+              setStanding(
+                league.currentStandings[0] || []
+              )
             }
+          }
         });
-        if (league && league.currentStandings.length > 0) {
-          setStanding(
-            league.currentStandings[0] || []
-          )
         }
-      }
-    });
-    }
   }, [fixture])
 
-  const [statsWindow, setStatsWindow] = useState(1);
-
-  const [stats, setStats] = useState<Stats>({
-    homeWin: 0,
-    homeDraw: 0,
-    homeLost: 0,
-    homeGoals: 0,
-    awayGoals: 0,
-    homeShots: 0,
-    awayShots: 0,
-  } as Stats);
-    // goalsScored: 0,
-    // goalsConceded: 0,
-    // shots: 0,
-    // shotsOnTarget: 0,
-    // shotsOffTarget: 0,
-    // corners: 0,
-    // fouls: 0,
-    // yellowCards: 0,
-    // redCards: 0,
-    // win: 0,
-    // draw: 0,
-    // loss: 0,
-  // } as Stats);
   React.useEffect(() => {
     log.debug(`Stats window selected to ${statsWindow}`);
     getH2HStats(fixture.homeTeam.teamId, fixture.awayTeam.teamId, statsWindow).then((
@@ -249,11 +199,6 @@ if(fixture){
 
   }, [statsWindow])
 
-  const getSummaryLabel = (value: number) => {
-    const found = summaryOptions.find(opt => opt.value === value);
-    return found ? found.label : `Last ${value} Months`;
-  };
-
   return (
       <SafeAreaView style={styles.container}>
         <ScrollView showsVerticalScrollIndicator={false}>
@@ -271,7 +216,11 @@ if(fixture){
             <Text style={styles.matchDate}>{fixture.kickoffDate}</Text>
 
             <View style={styles.teamsContainer}>
-              <TouchableOpacity onPress={() => navigation.navigate('TeamDetails', {teamId: fixture.homeTeam.teamId})}>
+              <TouchableOpacity onPress={() => {
+                 if (fixture.homeTeam.teamId !== 0){
+                   navigation.navigate('TeamDetails', {teamId: fixture.homeTeam.teamId})
+                 }
+                }}>
                 <View style={styles.teamSection}>
                   <View style={styles.teamLogo}>
                     {fixture.homeTeam.logoUrl ? (
@@ -295,7 +244,12 @@ if(fixture){
                   {fixture.venue && typeof fixture.venue === 'object' && fixture.venue.city}
                 </Text>
               </View>
-              <TouchableOpacity onPress={() => navigation.navigate('TeamDetails', {teamId: fixture.awayTeam.teamId})}>
+              <TouchableOpacity onPress={() => {
+                 if (fixture.awayTeam.teamId !== 0){
+                   navigation.navigate('TeamDetails', {teamId: fixture.awayTeam.teamId})
+                 }
+                }}>
+
                 <View style={styles.teamSection}>
                   <View style={styles.teamLogo}>
                     {fixture.awayTeam.logoUrl ? (
@@ -322,7 +276,7 @@ if(fixture){
                   awayLineup={awayLineup}
                 />
               ) : (
-                <Text>No lineups available</Text>
+                <Text  style={globalStyles.emptyListText}>No lineups available</Text>
               )
             }
           </View>
@@ -342,17 +296,11 @@ if(fixture){
                     result={result}
                   />
                 )) :(
-                  <Text style={{ color: '#9CA3AF', fontSize: 13, alignSelf: 'center' }}>Not found</Text>
+                  <Text style={globalStyles.emptyListText}> Head-to-head records not found</Text>
                 )
               }
             </View>
             </ScrollView>
-
-            {/* Summary Window */}
-            {/* <View style={styles.summaryContainer}>
-              <Text style={styles.summaryLabel}>Summary window:</Text>
-              <Text style={styles.summaryValue}>{getSummaryLabel(summaryWindow)}</Text>
-            </View> */}
             <View>
               <ValveSelector 
                 onChange={(newWindow: number) => {
@@ -361,13 +309,16 @@ if(fixture){
               />
             </View>
              {/* Win/Draw/Loss */}
-            <View style={styles.statsRow}>
-              <Text style={styles.statsLabel}>Win/Draw/Loss</Text>
-              <WDLBarChart win={stats.homeWin} draw={stats.homeDraw} loss={stats.homeLost} />
-            </View>
+            {stats.homeWin !== -1 && stats.homeDraw !== -1 && stats.homeLost !== -1 && (
+              <View style={styles.statsRow}>
+                <Text style={styles.statsLabel}>Win/Draw/Loss</Text>
+                <WDLBarChart win={stats.homeWin} draw={stats.homeDraw} loss={stats.homeLost} />
+              </View>
+            )}
 
             {/* Goals Scored */}
-            <View style={styles.statsRow}>
+            { stats.homeGoals !== -1 && stats.awayGoals !== -1 && (
+              <View style={styles.statsRow}>
               <Text style={styles.statsLabel}>Goals scored</Text>
               <View style={styles.goalsContainer}>
                 <PitchlinePieChart
@@ -388,42 +339,50 @@ if(fixture){
                 />
               </View>
             </View>
-
-            {/* Goals Conceded */}
-            <View style={styles.statsRow}>
+            )}
+            {/* <View style={styles.statsRow}>
               <Text style={styles.statsLabel}>Goals conceded</Text>
               <PitchlineComparisonBarChart
                 a={stats.awayGoals}
                 b={stats.homeGoals}
               />
-            </View>
+            </View> */}
 
             {/* Shots */}
-            <View style={styles.statsRow}>
-              <Text style={styles.statsLabel}>Shots</Text>
-              <PitchlineComparisonBarChart
-                a={stats.homeShots}
-                b={stats.awayShots}
-              />
-            </View>
+            { stats.homeShots !== -1 && stats.awayShots !== -1 && (
+              <View style={styles.statsRow}>
+                <Text style={styles.statsLabel}>Total Shots</Text>
+                <PitchlineComparisonBarChart
+                  a={stats.homeShots}
+                  b={stats.awayShots}
+                />
+              </View>
+            )}
           </View>
 
           {/* Standings */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Standings</Text>
-            <PitchLineStandingTable 
-              standings={standing}
-              teamId={fixture?.homeTeam.teamId || undefined}
-              teamAwayId={fixture?.awayTeam.teamId || undefined}
-              onPress={(id: number) => {
-                navigation.navigate('TeamDetails', { teamId : id });
-              }}
-            />
-            <Text style={globalStyles.footNotes}>
-              Last updated: {standing && standing.length > 0 && standing[0].lastUpdated
-                ? standing[0].lastUpdated
-                : 'N/A'}
-            </Text>
+            { standing && standing.length > 0 ?
+              (
+                <View>
+                  <PitchLineStandingTable 
+                        standings={standing}
+                        teamId={fixture?.homeTeam.teamId || undefined}
+                        teamAwayId={fixture?.awayTeam.teamId || undefined}
+                        onPress={(id: number) => {
+                          navigation.navigate('TeamDetails', { teamId : id });
+                        }}       
+                      />
+                  <Text style={globalStyles.footNotes}>
+                    Last updated: {standing && standing.length > 0 && standing[0].lastUpdated
+                      ? standing[0].lastUpdated
+                      : 'N/A'}
+                  </Text>
+                </View>
+              )
+              : <Text style={globalStyles.emptyListText}>No standings available</Text>
+            }
           </View>
         </ScrollView>
       </SafeAreaView>

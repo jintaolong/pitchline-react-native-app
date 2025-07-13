@@ -9,11 +9,12 @@ import { useIsFocused } from '@react-navigation/native';
 import { getUpcomingMatches } from '../services/matchService';
 import { FixtureResponseDto } from '../dtos/Fixtures';
 import { fixtureDtoToMatch } from '../utils/mappers';
-import { getTeamDetails } from '../services/teamService';
+import { getLeagueStanding, getTeamDetails } from '../services/teamService';
 import { useNavigation } from '@react-navigation/native';
 import log from '../utils/logger';
 import { Team } from '../models/Teams';
 import TeamCard from '../components/TeamCard';
+import { globalStyles } from '../styles/globalStyles';
 
 const UPCOMING_GAME_DAY_SPAN = 3;
 
@@ -23,11 +24,16 @@ const UPCOMING_GAME_DAY_SPAN = 3;
 //   name: string;
 //   logo: string;
 // }
+type LeagueOrTeam = {
+  id: number;
+  name: string;
+  logo: string;
+};
 
 const searchData: SearchItem[] = require('../../assets/data/search_data.json');
 
 const HomeScreen = () => {
-  log.debug(searchData.at(0));
+  // log.debug(searchData.at(0));
   const navigation = useNavigation();
 
   const updateMaps = (favs: Favourite[]) => {
@@ -49,49 +55,56 @@ const HomeScreen = () => {
   const [teamMap, setTeamMap] = useState<number[]>([]);
   const [leagueMap, setLeagueMap] = useState<number[]>([]);
   const [favTeamHasMatch, setFavTeamHasMatch] = useState<{ [teamId: number]: boolean }>({});
+  const [favLeagueHasMatch, setFavLeagueHasMatch] = useState<{ [leagueId: number]: boolean }>({});
   const [noMatchTeams, setNoMatchTeams] = useState<Team[]>([]);
   const [activeTab, setActiveTab] = useState<'teams' | 'leagues'>('teams');
-  // const [noMatchLeagues, setNoMatchLeagues] = useState<NoMatchTeamOrLeagues[]>([]);
+  const [noMatchLeagues, setNoMatchLeagues] = useState<LeagueOrTeam[]>([]);
 
-  const renderMatch = ({ item }: { item: Match }) => (
+  const renderMatch = ({ item }: { item: Match }) => item.status !== 'NA' ? (
     <MatchCard item={item} />
-  );
-
-  const renderTeam = ({ item }: { item: Team }) => (
+  ) : (
     <TeamCard team={item} onPress={(team) => navigation.navigate('TeamDetails', { teamId: team.id })} />
   );
+
+  // const renderTeam = ({ item }: { item: Team }) => (
+  //   <TeamCard team={item} onPress={(team) => navigation.navigate('TeamDetails', { teamId: team.id })} />
+  // );
   
   // Dummy fetchSuggestions implementation
   const fetchSuggestions = async (query: string) => {
     log.debug(`Fetching suggestions for query: ${query}`);
     log.debug(`Total search data items: ${searchData.length}`);
+    const results = searchData.filter(item =>
+      item.name.toLowerCase().includes(query.toLowerCase())
+    );
+    log.debug(`Filtered results: ${results.length} items found`);
     // Use a simple in-memory index for prefix search to improve performance
     // Build a Map from first letter to array of items for quick narrowing
-    const [searchIndex, setSearchIndex] = useState<Map<string, SearchItem[]>>(new Map());
+    // const [searchIndex, setSearchIndex] = useState<Map<string, SearchItem[]>>(new Map());
 
-    useEffect(() => {
-      // Build the index once on mount
-      const index = new Map<string, SearchItem[]>();
-      for (const item of searchData) {
-        const first = item.name[0]?.toLowerCase() || '';
-        if (!index.has(first)) index.set(first, []);
-        index.get(first)!.push(item);
-      }
-      setSearchIndex(index);
-    }, []);
+    // useEffect(() => {
+    //   // Build the index once on mount
+    //   const index = new Map<string, SearchItem[]>();
+    //   for (const item of searchData) {
+    //     const first = item.name[0]?.toLowerCase() || '';
+    //     if (!index.has(first)) index.set(first, []);
+    //     index.get(first)!.push(item);
+    //   }
+    //   setSearchIndex(index);
+    // }, []);
 
-    let result: SearchItem[] = [];
-    if (query.length > 0) {
-      const first = query[0].toLowerCase();
-      const candidates = searchIndex.get(first) || [];
-      result = candidates.filter(item =>
-        item.name.toLowerCase().startsWith(query.toLowerCase())
-      );
-    } else {
-      result = [];
-    }
-    log.debug(`Fetched ${result.length} results for query: ${query}`);
-    return result;
+    // let result: SearchItem[] = [];
+    // if (query.length > 0) {
+    //   const first = query[0].toLowerCase();
+    //   const candidates = searchIndex.get(first) || [];
+    //   result = candidates.filter(item =>
+    //     item.name.toLowerCase().startsWith(query.toLowerCase())
+    //   );
+    // } else {
+    //   result = [];
+    // }
+    // log.debug(`Fetched ${result.length} results for query: ${query}`);
+    return results;
   };
 
   useEffect(() => {
@@ -131,12 +144,12 @@ const HomeScreen = () => {
           }
           return acc;
         }, {});
-        // const favLeagueHasMatch = favourites.reduce<{ [leagueId: number]: boolean }>((acc, fav) => {
-        //   if (fav.type === 'league') {
-        //     acc[fav.id] = false;
-        //   }
-        //   return acc;
-        // }, {});
+        const favLeagueHasMatch = favourites.reduce<{ [leagueId: number]: boolean }>((acc, fav) => {
+          if (fav.type === 'league') {
+            acc[fav.id] = false;
+          }
+          return acc;
+        }, {});
 
         matches
           .filter((match: FixtureResponseDto) => {
@@ -168,11 +181,11 @@ const HomeScreen = () => {
                 if (!leagueMatches[leagueId]) leagueMatches[leagueId] = {name: '', matches: []};
                 leagueMatches[leagueId].matches.push(fixtureDtoToMatch(match));
                 leagueMatches[leagueId].name = leagueName;
-                // favLeagueHasMatch[leagueId] = true; // Mark that this league has a match
+                favLeagueHasMatch[leagueId] = true; // Mark that this league has a match
               }
             });
             setLeagueMatches(leagueMatches);
-          
+            setFavLeagueHasMatch(favLeagueHasMatch);
           });
       })
       .catch((error) => {
@@ -210,11 +223,46 @@ const HomeScreen = () => {
       });
   }, [favTeamHasMatch])
 
+  useEffect(() => {
+    // Fetch leagues with no matches
+    const leaguesToFetch = Object.entries(favLeagueHasMatch)
+      .filter(([_, hasMatch]) => !hasMatch)
+      .map(([leagueId]) => Number(leagueId));
+
+    Promise.all(
+      leaguesToFetch.map(leagueId =>
+        getLeagueStanding(leagueId, new Date().getFullYear()).then(leagueDetail => {
+          return {
+            id: leagueId,
+            name: leagueDetail?.league.name || `League ${leagueId}`,
+            logo:
+              leagueDetail?.league.logo || '', // TODO: Fallback logo
+          };
+        })
+      )
+    )
+    .then((results) => {
+      setNoMatchLeagues(results.map(league => ({
+        id: league.id,
+        name: league.name,
+        logo: league.logo,
+      })) as LeagueOrTeam[]);
+    })
+    .catch(error => {
+      console.error('Error fetching league details:', error);
+    });
+  }, [favLeagueHasMatch]);
+
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <TopSearchBar fetchSuggestions={fetchSuggestions} />
 
+      <View>
+        <Text>
+          {favourites.map(fav => fav.type === 'team' ? `Team ${fav.id}` : `League ${fav.id}`).join(', ') || 'No favourites selected.'}
+        </Text>
+      </View>
       {/* Tabs */}
       <View style={styles.tabBar}>
         <TouchableOpacity
@@ -235,11 +283,33 @@ const HomeScreen = () => {
       {activeTab === 'teams' ? (
         <View>
           <SectionList
-            sections={Object.entries(teamMatches).map(([teamId, { name, matches }]) => ({
-              title: name || `Team ${teamId}`,
-              data: matches,
-              key: `team-${teamId}`,
-            }))}
+            sections={
+              [
+                ...Object.entries(teamMatches).map(([teamId, { name, matches }]) => ({
+                  title: name || `Team ${teamId}`,
+                  data: matches,
+                  key: `team-${teamId}`,
+                })),
+                {
+                  title: "No Upcoming Matches",
+                  data: noMatchTeams.map((team) => {
+                      return {
+                          id: team.id,
+                          homeTeam: team,
+                          awayTeam: team,
+                          homeLogo: team.logo,
+                          awayLogo: team.logo,
+                          status: 'NA',
+                          competition: 'No Matches',
+                          competitionId: 0,
+                          channel: 'NA',
+                          viewers: 'NA',
+                      } as Match;
+                    }), 
+                    key: `no-match-team`,
+                }
+              ]
+            }
             keyExtractor={(item) => item.id.toString()}
             renderItem={renderMatch}
             renderSectionHeader={({ section: { title } }) => (
@@ -248,13 +318,13 @@ const HomeScreen = () => {
               </View>
             )}
             ListEmptyComponent={
-              <Text style={styles.emptyText}>
-                No upcoming fixtures for your favourite teams.
+              <Text style={globalStyles.emptyListText}>
+                You haven't followed any teams yet.
               </Text>
             }
             stickySectionHeadersEnabled={false}
           />
-          {noMatchTeams.length > 0 && (
+          {/* {noMatchTeams.length > 0 && (
             <View>
               <Text style={styles.noMatchTitle}>No upcoming matches</Text>
               <FlatList
@@ -265,22 +335,53 @@ const HomeScreen = () => {
                 contentContainerStyle={{ paddingHorizontal: 20 }}
               />
             </View>
-          )}
+          )} */}
         </View>
       ) : (
         <SectionList
-          sections={Object.entries(leagueMatches).map(([leagueId, { name, matches }]) => ({
+          sections={[
+            ...Object.entries(leagueMatches).map(([leagueId, { name, matches }]) => ({
             title: name || `League ${leagueId}`,
             data: matches,
             key: `league-${leagueId}`,
-          }))}
+          })),
+          {
+            title: "No Upcoming Matches",
+            data: noMatchLeagues.map((league) => {
+              return {
+                id: league.id,
+                homeTeam: league,
+                awayTeam: league,
+                homeLogo: league.logo,
+                awayLogo: league.logo,
+                status: 'NA',
+                competition: 'No Matches',
+                competitionId: 0,
+                channel: 'NA',
+                viewers: 'NA',
+              } as Match;
+            }),
+            key: `no-match-league`,
+          }
+        ]
+        }
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderMatch}
-          renderSectionHeader={({ section: { title } }) => (
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionHeaderText}>{title}</Text>
-            </View>
-          )}
+          renderSectionHeader={({ section: { title, data } }) => 
+            // data.length === 0 ? (
+            //   <Text style={styles.noMatchTitle}>No upcoming matches for {title}</Text>
+            // ) : 
+            (
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionHeaderText}>{title}</Text>
+              </View>
+            )
+            // return(
+            //   <View style={styles.sectionHeaderRow}>
+            //     <Text style={styles.sectionHeaderText}>{title}</Text>
+            //   </View>
+            // )
+        }
           ListEmptyComponent={
             <Text style={styles.emptyText}>
               No upcoming fixtures for your favourite leagues.

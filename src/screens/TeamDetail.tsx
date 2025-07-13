@@ -21,6 +21,7 @@ import { leagueStandingDtoToLeague } from '../utils/mappers';
 import log from '../utils/logger';
 import { globalStyles } from '../styles/globalStyles';
 import { addFavourite, Favourite, FavouriteType, getFavourites, isFavourite, removeFavourite } from '../utils/follow';
+import { mockTeamDetails } from '../utils/mocks';
 
 const { width } = Dimensions.get('window');
 
@@ -30,56 +31,7 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
   const navigation = useNavigation();
   const [activeLeague, setActiveLeague] = useState('Domestic League');
   const {teamId} = route.params;
-  const [teamDetail, setTeamDetail] = useState<TeamDto>({
-    _id: 'dummy_id',
-    team_id: 1,
-    team_name: 'Dummy Team',
-    coach: {
-      id: 1,
-      name: 'Dummy Coach',
-      firstname: 'John',
-      lastname: 'Doe',
-      age: 50,
-      nationality: 'Nowhere',
-      photo: '',
-      height: "180",
-      weight: "75",
-      team: {
-        id: 1,
-        name: 'Dummy Team',
-        logo: '',
-      },
-      birth: {
-        date: '1973-01-01',
-        place: 'Nowhere',
-        country: 'Nowhere',
-      },
-      career: [
-        {
-          team: {
-            id: 1,
-            name: 'Dummy Team',
-            logo: '',
-          },
-          start: '2000-01-01',
-          end: '2010-01-01',
-        } as CoachCareerDto
-      ]
-    },
-    current_squad: [],
-    // venue: {
-    //   id: 1,
-    //   name: 'Dummy Stadium',
-    //   address: '123 Dummy St',
-    //   city: 'Dummytown',
-    //   capacity: 10000,
-    //   surface: 'Grass',
-    //   image: '',
-    // },
-    past_fixtures: [],
-    future_fixtures: [],
-  });
-  const [teamLeague, setTeamLeague] = useState<League | null>(null);
+  const [teamDetail, setTeamDetail] = useState<TeamDto>(mockTeamDetails());
   const [teamLeagues, setTeamLeagues] = useState<League[]>([]);
   const [mostRecentFixture, setMostRecentFixture] = useState<TeamFixtureDto | undefined>(undefined);
   const [hasFollowed, setHasFollowed] = useState<boolean>(false);
@@ -192,15 +144,6 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
     }
   }, [teamLeagues]);
 
-  // const getFormColor = (result: string) => {
-  //   switch (result) {
-  //     case 'W': return '#10B981';
-  //     case 'L': return '#EF4444';
-  //     case 'D': return '#F59E0B';
-  //     default: return '#9CA3AF';
-  //   }
-  // };
-
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -216,41 +159,48 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
         </View>
 
         {/* Follow Button */}
-        <View style={{ alignItems: 'center', marginTop: 12, marginBottom: -8 }}>
-        <TouchableOpacity
-          style={{
-          backgroundColor: '#6366F1',
-          borderRadius: 20,
-          paddingHorizontal: 24,
-          paddingVertical: 8,
-          flexDirection: 'row',
-          alignItems: 'center',
-          }}
-          onPress={() => {
-            let fav = {
-              id: teamDetail.team_id,
-              type: 'team' as FavouriteType, // Assuming 'team' is a valid FavouriteType
-            }
-            if (hasFollowed){
-              removeFavourite(fav).then(() => {
-                setHasFollowed(false);
-              });
-            } else {
-              addFavourite(fav).then(() => {
-              setHasFollowed(true);
-            });
-            }
-          }}
-        >
-          <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
-            {hasFollowed ? '✓ Following' : '+ Follow'}
-          </Text>
-        </TouchableOpacity>
-        </View>
+        {teamDetail.team_id !== 0 && (
+          <View style={{ alignItems: 'center', marginTop: 12, marginBottom: -8 }}>
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#6366F1',
+                borderRadius: 20,
+                paddingHorizontal: 24,
+                paddingVertical: 8,
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}
+              onPress={() => {
+                let fav = {
+                  id: teamDetail.team_id,
+                  type: 'team' as FavouriteType,
+                }
+                if (hasFollowed){
+                  removeFavourite(fav).then(() => {
+                    setHasFollowed(false);
+                  });
+                } else {
+                  addFavourite(fav).then(() => {
+                    setHasFollowed(true);
+                  });
+                }
+              }}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+                {hasFollowed ? '✓ Following' : '+ Follow'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Most Recent Match */}
         <View style={styles.section}>
         <Text style={styles.sectionTitle}>Most Recent Match</Text>
+        {!mostRecentFixture ? (
+          <Text style={globalStyles.emptyListText}>
+            Most recent match not available
+          </Text>
+        ) : (
         <View style={styles.matchCard}>
           <View style={styles.matchTeams}>
           <View style={styles.teamInfo}>
@@ -318,11 +268,17 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
           </View>
           </View>
         </View>
+        )}
         </View>
 
         {/* Form & Upcoming */}
         <View style={styles.section}>
         <Text style={styles.sectionTitle}>Form & Upcoming</Text>
+        {recentFixtures.length === 0 ? (
+          <Text style={globalStyles.emptyListText}>
+            Form & upcoming matches not available
+          </Text>
+        ) : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{marginHorizontal: -8}}>
           <View style={[styles.formContainer, {paddingHorizontal: 8}]}>
           {recentFixtures.map((form, index) => (
@@ -363,84 +319,76 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
           ))}
           </View>
         </ScrollView>
+        )}
         </View>
 
         {/* League Standings */}
         <View style={styles.section}>
-        <Text style={styles.sectionTitle}>League Standings</Text>
-        
-        {/* League Tabs */}
-        {
-          teamLeagues.length === 0 ? (
-          <Text style={{textAlign: 'center', color: '#9CA3AF'}}>No league standings available</Text>
-          ) : 
-          <View style={styles.leagueTabs}>
-          {teamLeagues.map((league, index) => {
-          if (!league || !league.currentStandings || league.currentStandings.length === 0) {
-            log.debug(`League: ${index + 1} has no current standings`);
-            return null; // Skip rendering if no standings are available
-          }
-          log.debug(`League: ${league.name}, Current Standings: ${league.currentStandings.length}`);
-          let leagueName = `Unknown League ${index + 1}`;
-            if (league.currentStandings.length > 0 && league.currentStandings[0][0].group) {
-            // leagueName = league.currentStandings[0][0].team.name;
-            leagueName = league.currentStandings[0][0].group;
-            if (leagueName === 'Domestic League') {
-              setActiveLeague('Domestic League');
-            }
-            }
-            return (
-              <TouchableOpacity
-              key={`${leagueName}-${index}`}
-              style={[styles.leagueTab, (activeLeague === leagueName || teamLeagues.length === 1) && styles.activeLeagueTab]}
-              onPress={() => setActiveLeague(leagueName)}
-              >
-              <Text style={[styles.leagueTabText, activeLeague === leagueName && styles.activeLeagueTabText]}>
-              {leagueName}
-              </Text>
-              </TouchableOpacity>
-            )
-          })}
-        </View>
-        }
-        <View style={styles.section}>
-          {/* Standings Table */}
-          {!!teamLeagues && teamLeagues.length > 0 &&
-          teamLeagues.map((league, index) => {
-            const groupName = league.currentStandings.length > 0 ? league.currentStandings[0][0].group : `group-${index}`;
-            return (
-            activeLeague === groupName &&
-              <View style={{marginBottom: 20}} key={`league-standings-${index}`}>
-              <PitchLineStandingTable
-                key={`${groupName}-${index}`}
-                standings={league.currentStandings[0]} // assuming the first element of current standing is the one
-                // TODO: clarify!!!!
-                teamId={teamId}
-                neighbour={2} // show only teams within 2 positions of the current team
-                onPress={(id: number) => {
-                navigation.navigate('TeamDetails', { teamId : id });
-                }}
-              />
+          <Text style={styles.sectionTitle}>League Standings</Text>
+          {teamLeagues.length === 0 ? (
+            <Text style={globalStyles.emptyListText}>
+              League standings not available
+            </Text>
+          ) : (
+            <View>
+              <View style={styles.leagueTabs}>
+                {teamLeagues.map((league, index) => {
+                if (!league || !league.currentStandings || league.currentStandings.length === 0) {
+                  log.debug(`League: ${index + 1} has no current standings`);
+                  return null; // Skip rendering if no standings are available
+                }
+                log.debug(`League: ${league.name}, Current Standings: ${league.currentStandings.length}`);
+                let leagueName = `Unknown League ${index + 1}`;
+                  if (league.currentStandings.length > 0 && league.currentStandings[0][0].group) {
+                  // leagueName = league.currentStandings[0][0].team.name;
+                  leagueName = league.currentStandings[0][0].group;
+                  if (leagueName === 'Domestic League') {
+                    setActiveLeague('Domestic League');
+                  }
+                  }
+                  return (
+                    <TouchableOpacity
+                    key={`${leagueName}-${index}`}
+                    style={[styles.leagueTab, (activeLeague === leagueName || teamLeagues.length === 1) && styles.activeLeagueTab]}
+                    onPress={() => setActiveLeague(leagueName)}
+                    >
+                    <Text style={[styles.leagueTabText, activeLeague === leagueName && styles.activeLeagueTabText]}>
+                    {leagueName}
+                    </Text>
+                    </TouchableOpacity>
+                  )
+                })}
               </View>
-            );
-          })}
-          <Text style={globalStyles.footNotes}>
-            Last updated: {teamLeagues.length > 0 && teamLeagues[0].lastUpdated
-            ? teamLeagues[0].lastUpdated
-            : 'N/A'}
-          </Text>
+              <View style={styles.section}>
+                {/* Standings Table */}
+                {!!teamLeagues && teamLeagues.length > 0 &&
+                teamLeagues.map((league, index) => {
+                  const groupName = league.currentStandings.length > 0 ? league.currentStandings[0][0].group : `group-${index}`;
+                  return (
+                  activeLeague === groupName &&
+                    <View style={{marginBottom: 20}} key={`league-standings-${index}`}>
+                    <PitchLineStandingTable
+                      key={`${groupName}-${index}`}
+                      standings={league.currentStandings[0]} // assuming the first element of current standing is the one
+                      // TODO: clarify!!!!
+                      teamId={teamId}
+                      neighbour={2} // show only teams within 2 positions of the current team
+                      onPress={(id: number) => {
+                      navigation.navigate('TeamDetails', { teamId : id });
+                      }}
+                    />
+                    </View>
+                  );
+                })}
+                <Text style={globalStyles.footNotes}>
+                  Last updated: {teamLeagues.length > 0 && teamLeagues[0].lastUpdated
+                  ? teamLeagues[0].lastUpdated
+                  : 'N/A'}
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
-        </View>
-
-        {/* Club Ranking */}
-        {/* <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Club Ranking</Text>
-        <View style={styles.rankingCard}>
-          <Text style={styles.rankingLabel}>UEFA Ranking</Text>
-          <Text style={styles.rankingNumber}>#2</Text>
-          <Text style={styles.rankingSubtext}>Club Coefficients</Text>
-        </View>
-        </View> */}
 
         {/* Coach Info */}
         <View style={styles.section}>
@@ -474,7 +422,7 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
             </View>    
           ) : (
             <View style={styles.largePlayerCard}>
-            <Text style={{ fontSize: 16, color: '#9CA3AF' }}>No coach information available</Text>
+            <Text style={globalStyles.emptyListText}>No coach information available</Text>
             </View>
           )
           }
@@ -485,34 +433,40 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
         {/* Squad & Management */}
         <View style={styles.section}>
         <Text style={styles.sectionTitle}>Squad & Management</Text>
-        <View style={styles.squadGrid}>
-          {teamDetail.current_squad.map((player, index) => (
-          <TouchableOpacity
-            key={player.id ? `player-${index}`: index}
-            style={styles.playerCard}
-            onPress={() => {
-            navigation.navigate('PlayerDetails', { playerId: player.id });
-            }}
-          >
-            <View style={styles.playerPhoto}>
-            {!player.photo ? (
-            <View style={styles.photoPlaceholder}>
-            <Text style={styles.photoText}>👤</Text>
-            </View>
-            ) : (
-            <Image
-            source={{ uri: player.photo }}
-            style={{ width: '100%', height: '100%' }}
-            resizeMode="cover"
-            />
-            )}
-            </View>
-            <Text style={styles.playerName}>{player.name}</Text>
-            {/* <Text style={styles.playerPosition}>{player.statistics.position}</Text> */}
-          </TouchableOpacity>
-          ))}
-          
-        </View>
+        {teamDetail.current_squad.length === 0 ? (
+          <View style={styles.largePlayerCard}>
+            <Text style={globalStyles.emptyListText}>No squad information available</Text>
+          </View>
+        ) : (
+          <View style={styles.squadGrid}>
+            {teamDetail.current_squad.map((player, index) => (
+              <TouchableOpacity
+                key={player.id ? `player-${index}` : index}
+                style={styles.playerCard}
+              onPress={() => {
+              navigation.navigate('PlayerDetails', { playerId: player.id });
+              }}
+            >
+              <View style={styles.playerPhoto}>
+              {!player.photo ? (
+              <View style={styles.photoPlaceholder}>
+              <Text style={styles.photoText}>👤</Text>
+              </View>
+              ) : (
+              <Image
+              source={{ uri: player.photo }}
+              style={{ width: '100%', height: '100%' }}
+              resizeMode="cover"
+              />
+              )}
+              </View>
+              <Text style={styles.playerName}>{player.name}</Text>
+              {/* <Text style={styles.playerPosition}>{player.statistics.position}</Text> */}
+            </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
         </View>
       </ScrollView>
       </SafeAreaView>

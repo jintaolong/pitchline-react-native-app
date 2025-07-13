@@ -51,5 +51,12 @@ export const globalStyles = StyleSheet.create({
         textAlign: 'right', 
         marginTop: 8 
     },
+    emptyListText: {
+        fontSize: 16,
+        color: '#9CA3AF',
+        textAlign: 'center',
+        marginTop: 20,
+        fontStyle: 'italic',
+    },
 });
 

@@ -5,7 +5,6 @@ import {
 
 View,
 TextInput,
-FlatList,
 TouchableOpacity,
 Image,
 Text,
@@ -17,6 +16,7 @@ Dimensions,
 } from 'react-native';
 // import { mockTopSearchData } from '../utils/mocks';
 import log from '../utils/logger';
+import { globalStyles } from '../styles/globalStyles';
 // import { mockTopSearchData } from '../utils/mocks';
 // import myData from '../assets/data/yourfile.json';
 
@@ -168,6 +168,9 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({ fetchSuggestions }) => {
                         setShowSuggestions(true);
                     }
                 }}
+                ListEmptyComponent={() => (
+                    <Text style={globalStyles.emptyListText}>No results found</Text>
+                )}
                 />
             </View>
             )}

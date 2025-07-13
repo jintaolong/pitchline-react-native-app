@@ -20,7 +20,7 @@ export interface MatchStatsDetail{
     offsides: number;
     ballPossession: number;
     yellowCards: number;
-    redCards: number | null;
+    redCards: number;
     goalkeeperSaves: number;
     totalPasses: number;
     passesAccurate: number;

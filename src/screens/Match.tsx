@@ -22,6 +22,7 @@ import { FixtureResponseDto } from '../dtos/Fixtures';
 import log from '../utils/logger';
 import { addFavourite, Favourite, FavouriteType, getFavourites, removeFavourite } from '../utils/follow';
 import { fixtureDtoToMatch } from '../utils/mappers';
+import { globalStyles } from '../styles/globalStyles';
 
 const CALENDAR_SPAN = 60;
 
@@ -282,6 +283,7 @@ const FootballMatchesScreen = () => {
               <Text style={styles.competitionItemText}>{allGroupedFixtures[Number(item)].name}</Text>
             </TouchableOpacity>
           )}
+          ListEmptyComponent={<Text style={globalStyles.emptyListText}>No competitions found</Text>}
         />
       </SafeAreaView>
     </Modal>
@@ -418,6 +420,11 @@ const FootballMatchesScreen = () => {
         );
     }}
       renderItem={renderMatch}
+      ListEmptyComponent={() => (
+        <View style={globalStyles.emptyListText}>
+          <Text>No matches found</Text>
+        </View>
+      )}
       // onScroll={handleMatchlistScroll}
     />
 

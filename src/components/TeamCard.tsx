@@ -2,7 +2,13 @@ import React from 'react';
 import { TouchableOpacity, View, Image, Text } from "react-native";
 import { Team } from '../models/Teams';
 
-const TeamCard = ({ team, onPress }: { team: Team; onPress: (team: Team) => void }) => {
+export interface TeamCardTeam{
+    id: number;
+    name?: string;
+    logo?: string;
+}
+
+const TeamCard = ({ team, onPress }: { team: TeamCardTeam; onPress: (team: TeamCardTeam) => void }) => {
 
     return (
     <TouchableOpacity
