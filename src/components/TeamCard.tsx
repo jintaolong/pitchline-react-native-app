@@ -1,6 +1,8 @@
 import React from 'react';
 import { TouchableOpacity, View, Image, Text } from "react-native";
 import { Team } from '../models/Teams';
+import log from '../utils/logger';
+import { Match } from '../models/Matches';
 
 export interface TeamCardTeam{
     id: number;
@@ -8,8 +10,8 @@ export interface TeamCardTeam{
     logo?: string;
 }
 
-const TeamCard = ({ team, onPress }: { team: TeamCardTeam; onPress: (team: TeamCardTeam) => void }) => {
-
+const TeamCard = ({ team, onPress }: { team: Match; onPress: (team: TeamCardTeam) => void }) => {
+    log.debug("TeamCard", team);
     return (
     <TouchableOpacity
     onPress={() => onPress(team)}
@@ -28,10 +30,11 @@ const TeamCard = ({ team, onPress }: { team: TeamCardTeam; onPress: (team: TeamC
         shadowOpacity: 0.04,
         shadowRadius: 2,
         elevation: 1,
+        marginHorizontal: 15, // <-- Add this line for left/right spacing
         }}
     >
         <Image
-            source={{ uri: team.logo }}
+            source={{ uri: team.homeLogo || team.awayLogo || '' }}
             style={{
             width: 40,
             height: 40,
@@ -50,7 +53,7 @@ const TeamCard = ({ team, onPress }: { team: TeamCardTeam; onPress: (team: TeamC
         }}
         numberOfLines={1}
         >
-        {team.name}
+        {team.homeTeam.name || team.awayTeam.name || 'Unknown Team'}
         </Text>
     </View>
     </TouchableOpacity>

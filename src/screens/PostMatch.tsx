@@ -76,10 +76,10 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
           setHomeLineup(home);
           setAwayLineup(away);
         }else{
-          console.error('Unexpected number of lineups:', data.lineups.length);
+          log.debug('Unexpected number of lineups:', data.lineups.length);
         }
       } else {
-        console.error('Failed to fetch match lineups');
+        log.error('Failed to fetch match lineups');
       }
     });
 

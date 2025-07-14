@@ -21,6 +21,7 @@ export const globalStyles = StyleSheet.create({
         // borderRadius: 12,
         // marginVertical: 8,
     },
+    
     header: {
         backgroundColor: '#ffffff'
     },
@@ -51,10 +52,20 @@ export const globalStyles = StyleSheet.create({
         textAlign: 'right', 
         marginTop: 8 
     },
+    emptyListContainer: {
+        // flex: 1,
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        textAlign: 'center',
+        padding: 20,
+    },
     emptyListText: {
         fontSize: 16,
         color: '#9CA3AF',
         textAlign: 'center',
+        justifyContent: 'center',
+        alignItems: 'center',
         marginTop: 20,
         fontStyle: 'italic',
     },

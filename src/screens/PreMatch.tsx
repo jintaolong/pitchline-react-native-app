@@ -81,10 +81,10 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
           setHomeLineup(home);
           setAwayLineup(away);
         }else{
-          console.error('Unexpected number of lineups:', data.lineups.length);
+          log.debug('Unexpected number of lineups:', data.lineups.length);
         }
       } else {
-        console.error('Failed to fetch match lineups');
+        log.error('Failed to fetch match lineups');
       }
     });
   }, [fixtureId]);
@@ -288,7 +288,7 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
             {/* Recent Form */}
             <Text style={styles.statsLabel}>Head-to-head</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
-              <View style={styles.formContainer}>
+              {/* <View style={styles.formContainer}> */}
               {h2hResults.length > 0 ? 
                 h2hResults.map((result: H2HResults) => (
                   <H2HStats 
@@ -296,10 +296,12 @@ const PreMatchDetailsScreen = ({ route }: { route: PreMatchDetailsScreenRoutePro
                     result={result}
                   />
                 )) :(
-                  <Text style={globalStyles.emptyListText}> Head-to-head records not found</Text>
+                  <View style={globalStyles.emptyListContainer}> 
+                    <Text style={globalStyles.emptyListText}>No head-to-head records found</Text>
+                  </View>
                 )
               }
-            </View>
+            {/* </View> */}
             </ScrollView>
             <View>
               <ValveSelector 

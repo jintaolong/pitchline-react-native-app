@@ -24,7 +24,7 @@ const UPCOMING_GAME_DAY_SPAN = 3;
 //   name: string;
 //   logo: string;
 // }
-type LeagueOrTeam = {
+type MatchOrLeagueOrTeam = {
   id: number;
   name: string;
   logo: string;
@@ -56,9 +56,9 @@ const HomeScreen = () => {
   const [leagueMap, setLeagueMap] = useState<number[]>([]);
   const [favTeamHasMatch, setFavTeamHasMatch] = useState<{ [teamId: number]: boolean }>({});
   const [favLeagueHasMatch, setFavLeagueHasMatch] = useState<{ [leagueId: number]: boolean }>({});
-  const [noMatchTeams, setNoMatchTeams] = useState<Team[]>([]);
+  const [noMatchTeams, setNoMatchTeams] = useState<MatchOrLeagueOrTeam[]>([]);
   const [activeTab, setActiveTab] = useState<'teams' | 'leagues'>('teams');
-  const [noMatchLeagues, setNoMatchLeagues] = useState<LeagueOrTeam[]>([]);
+  const [noMatchLeagues, setNoMatchLeagues] = useState<MatchOrLeagueOrTeam[]>([]);
 
   const renderMatch = ({ item }: { item: Match }) => item.status !== 'NA' ? (
     <MatchCard item={item} />
@@ -216,7 +216,7 @@ const HomeScreen = () => {
           id: team.id,
           name: team.name,
           logo: team.logo,
-        })) as Team[]);
+        })) as MatchOrLeagueOrTeam[]);
         })
       .catch(error => {
         console.error('Error fetching team details:', error);
@@ -246,7 +246,7 @@ const HomeScreen = () => {
         id: league.id,
         name: league.name,
         logo: league.logo,
-      })) as LeagueOrTeam[]);
+      })) as MatchOrLeagueOrTeam[]);
     })
     .catch(error => {
       console.error('Error fetching league details:', error);
@@ -258,11 +258,11 @@ const HomeScreen = () => {
     <SafeAreaView style={styles.container} edges={['top']}>
       <TopSearchBar fetchSuggestions={fetchSuggestions} />
 
-      <View>
+      {/* <View>
         <Text>
           {favourites.map(fav => fav.type === 'team' ? `Team ${fav.id}` : `League ${fav.id}`).join(', ') || 'No favourites selected.'}
         </Text>
-      </View>
+      </View> */}
       {/* Tabs */}
       <View style={styles.tabBar}>
         <TouchableOpacity
@@ -281,64 +281,50 @@ const HomeScreen = () => {
 
       {/* Tab Content */}
       {activeTab === 'teams' ? (
-        <View>
-          <SectionList
-            sections={
-              [
-                ...Object.entries(teamMatches).map(([teamId, { name, matches }]) => ({
-                  title: name || `Team ${teamId}`,
-                  data: matches,
-                  key: `team-${teamId}`,
-                })),
-                {
-                  title: "No Upcoming Matches",
-                  data: noMatchTeams.map((team) => {
-                      return {
-                          id: team.id,
-                          homeTeam: team,
-                          awayTeam: team,
-                          homeLogo: team.logo,
-                          awayLogo: team.logo,
-                          status: 'NA',
-                          competition: 'No Matches',
-                          competitionId: 0,
-                          channel: 'NA',
-                          viewers: 'NA',
-                      } as Match;
-                    }), 
-                    key: `no-match-team`,
-                }
-              ]
+        <SectionList
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }} // <-- Add paddingBottom here
+          sections={[
+            ...Object.entries(teamMatches).map(([teamId, { name, matches }]) => ({
+              title: name || `Team ${teamId}`,
+              data: matches,
+              key: `team-${teamId}`,
+            })),
+            {
+              title: "No Upcoming Matches",
+              data: noMatchTeams.map((team) => {
+          return {
+            id: team.id,
+            homeTeam: team,
+            awayTeam: team,
+            homeLogo: team.logo,
+            awayLogo: team.logo,
+            status: 'NA',
+            competition: 'No Matches',
+            competitionId: 0,
+            channel: 'NA',
+            viewers: 'NA',
+          } as Match;
+              }),
+              key: `no-match-team`,
             }
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={renderMatch}
-            renderSectionHeader={({ section: { title } }) => (
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeaderText}>{title}</Text>
-              </View>
-            )}
-            ListEmptyComponent={
-              <Text style={globalStyles.emptyListText}>
-                You haven't followed any teams yet.
-              </Text>
-            }
-            stickySectionHeadersEnabled={false}
-          />
-          {/* {noMatchTeams.length > 0 && (
-            <View>
-              <Text style={styles.noMatchTitle}>No upcoming matches</Text>
-              <FlatList
-                data={noMatchTeams}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={renderTeam}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 20 }}
-              />
+          ]}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderMatch}
+          renderSectionHeader={({ section: { title } }) => (
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionHeaderText}>{title}</Text>
             </View>
-          )} */}
-        </View>
+          )}
+          ListEmptyComponent={
+            <Text style={globalStyles.emptyListText}>
+              You haven't followed any teams yet.
+            </Text>
+          }
+          stickySectionHeadersEnabled={false}
+        />
       ) : (
         <SectionList
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }} // <-- Add paddingBottom here
           sections={[
             ...Object.entries(leagueMatches).map(([leagueId, { name, matches }]) => ({
             title: name || `League ${leagueId}`,
