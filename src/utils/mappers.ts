@@ -11,6 +11,8 @@ import {League} from "../models/Leagues";
 
 import log from "./logger";
 import { Match } from "../models/Matches";
+import { Player } from "../models/Teams";
+import { PlayerDto } from "../dtos/Teams";
 
 export const fixtureDtoToFixture = (data: FixtureResponseDto) => {
     const kickoffDateObj = new Date(data.fixture.fixture.date);
@@ -186,4 +188,17 @@ export const leagueStandingDtoToLeague = (data: LeagueStandingDto) => {
         }),
         lastUpdated: new Date(lastUpdated).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
     } as League;
+}
+
+
+export const teamPlayerDtoToTeamPlayer = (player: PlayerDto) : Player => {
+    return {
+        id: player.id,
+        name: player.name,
+        number: player.number || 0,
+        position: player.position || '',
+        photo: player.photo || '',
+        age: player.age || 0,
+        // height: player.height || ''
+    } as Player;
 }

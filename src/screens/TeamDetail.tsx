@@ -438,35 +438,64 @@ const TeamDetailsScreen = ({route}: {route: TeamDetailsScreenRouteProp}) => {
             <Text style={globalStyles.emptyListText}>No squad information available</Text>
           </View>
         ) : (
-          <View style={styles.squadGrid}>
-            {teamDetail.current_squad.map((player, index) => (
-              <TouchableOpacity
-                key={player.id ? `player-${index}` : index}
-                style={styles.playerCard}
-              onPress={() => {
+          // Group players by position
+          Object.entries(
+            teamDetail.current_squad.reduce((groups: Record<string, typeof teamDetail.current_squad>, player) => {
+              const pos = player.position || 'Unknown Position';
+              if (!groups[pos]) groups[pos] = [];
+              groups[pos].push(player);
+              return groups;
+            }, {})
+          ).map(([position, players]) => (
+            <View key={position} style={{ marginBottom: 16 }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#374151', marginBottom: 8 }}>
+          {position}
+              </Text>
+              {players.map((player, index) => (
+          <TouchableOpacity
+            key={player.id ? `player-${index}` : index}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: '#F9FAFB',
+              borderRadius: 8,
+              padding: 8,
+              marginBottom: 8,
+            }}
+            onPress={() => {
               navigation.navigate('PlayerDetails', { playerId: player.id });
-              }}
-            >
-              <View style={styles.playerPhoto}>
+            }}
+          >
+            <View style={{ width: 40, height: 40, borderRadius: 20, overflow: 'hidden', marginRight: 12 }}>
               {!player.photo ? (
-              <View style={styles.photoPlaceholder}>
-              <Text style={styles.photoText}>👤</Text>
-              </View>
+                <View style={{ width: '100%', height: '100%', backgroundColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontSize: 18 }}>👤</Text>
+                </View>
               ) : (
-              <Image
-              source={{ uri: player.photo }}
-              style={{ width: '100%', height: '100%' }}
-              resizeMode="cover"
-              />
+                <Image
+            source={{ uri: player.photo }}
+            style={{ width: '100%', height: '100%' }}
+            resizeMode="cover"
+                />
               )}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: '#1F2937' }} numberOfLines={1}>
+                {player.name}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 2 }}></View>
+                <Text style={{ fontSize: 12, color: '#6366F1', fontWeight: 'bold' }}>
+            #{player.number}
+                </Text>
+                <Text style={{ fontSize: 12, color: '#9CA3AF' }}>
+            Age: {player.age}
+                </Text>
               </View>
-              <Text style={styles.playerName}>{player.name}</Text>
-              {/* <Text style={styles.playerPosition}>{player.statistics.position}</Text> */}
-            </TouchableOpacity>
-            ))}
-          </View>
+          </TouchableOpacity>
+              ))}
+            </View>
+          ))
         )}
-
         </View>
       </ScrollView>
       </SafeAreaView>

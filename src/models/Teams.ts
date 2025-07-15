@@ -4,6 +4,17 @@ export interface Team{
     logo?: string;
 }
 
+export interface Player {
+    id: number;
+    name: string;
+    position: string;
+    age: number;
+    nationality: string;
+    height?: string;
+    number: number;
+    photo: string;
+}
+
 export interface RecentFixture{
     result: 'W' | 'D' | 'L' | 'O';
     competition: string;
