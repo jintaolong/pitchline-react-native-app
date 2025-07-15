@@ -17,23 +17,12 @@ Dimensions,
 // import { mockTopSearchData } from '../utils/mocks';
 import log from '../utils/logger';
 import { globalStyles } from '../styles/globalStyles';
+import { SearchItemDto } from '../dtos/SearchTerms';
 // import { mockTopSearchData } from '../utils/mocks';
 // import myData from '../assets/data/yourfile.json';
 
 // or
 
-export type SearchItem = {
-    id: number;
-    type: string; // 'league' | 'team' | 'player'
-    name: string;
-    photo?: string;
-    position?: string;
-    nationality?: string;
-    team?: string;
-    country?: string;
-    founded?: number;
-    season?: number;
-};
 
 type GroupSelection = {
     header: boolean;
@@ -42,14 +31,14 @@ type GroupSelection = {
 };
 
 type TopSearchBarProps = {
-fetchSuggestions: (query: string) => Promise<SearchItem[]>;
+fetchSuggestions: (query: string) => Promise<SearchItemDto[]>;
 };
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const TopSearchBar: React.FC<TopSearchBarProps> = ({ fetchSuggestions }) => {
     const [query, setQuery] = useState('');
-    const [suggestions, setSuggestions] = useState<SearchItem[]>([]);
+    const [suggestions, setSuggestions] = useState<SearchItemDto[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     // const [currentSuggestionContainerHeight, setCurrentSuggestionContainerHeight] = useState(0);
     const navigation = useNavigation();
@@ -77,7 +66,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({ fetchSuggestions }) => {
         }
     };
 
-    const handleSelect = (item: SearchItem) => {
+    const handleSelect = (item: SearchItemDto) => {
         log.debug(`Selected item: ${item.name} (${item.type})`);
         setShowSuggestions(false);
         setQuery('');
