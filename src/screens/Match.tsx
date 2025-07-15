@@ -14,7 +14,6 @@ import {
   Animated,
   ScrollView
 } from 'react-native';
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import MatchCard from '../components/MatchCard';
 import { Match } from '../models/Matches';
 import { getMatchLit } from '../services/matchService';
@@ -23,6 +22,7 @@ import log from '../utils/logger';
 import { addFavourite, Favourite, FavouriteType, getFavourites, removeFavourite } from '../utils/follow';
 import { fixtureDtoToMatch } from '../utils/mappers';
 import { globalStyles } from '../styles/globalStyles';
+import MatchCardHeader from '../components/MatchCardHeader';
 
 const CALENDAR_SPAN = 60;
 
@@ -87,17 +87,14 @@ const FootballMatchesScreen = () => {
   const [selectedFilters, setSelectedFilters] = useState<GroupFilter[]>([{ name: 'All', id: 0 }]);
   const [showCompetitionModal, setShowCompetitionModal] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [favouriteLeagues, setFavouriteLeagues] = useState<{ [key: number]: boolean }>({});
+  const [favouriteLeagues, setFavouriteLeagues] = useState<Favourite[]>([]);
 
   useEffect(() => {
     getFavourites().then((favs: Favourite[]) => {
       setFavouriteLeagues(
         favs.filter(fav => {
               return fav.type === 'league';
-        }).map(fav => fav.id).reduce((acc: { [key: number]: boolean }, id: number) => {
-          acc[id] = true;
-          return acc;
-        }, {} as { [key: number]: boolean })
+        })
       );
       // const favsMap: { [key: number]: boolean } = {};
       // favs.forEach(fav => {
@@ -291,7 +288,7 @@ const FootballMatchesScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <Text style={styles.headerTitle}>Matches</Text>
         <View style={styles.headerIcons}>
           <TouchableOpacity style={styles.notificationButton}>
@@ -301,7 +298,7 @@ const FootballMatchesScreen = () => {
             <View style={styles.profileAvatar} />
           </TouchableOpacity>
         </View>
-      </View>
+      </View> */}
 
 
         {/* Calendar */}
@@ -382,42 +379,15 @@ const FootballMatchesScreen = () => {
       }))}
       keyExtractor={(item) => `${item.competitionId}-${item.id}`}
       renderSectionHeader={({ section: { id, title } }) => {
-        let favIconName = favouriteLeagues[Number(id)] ? 'bell-minus' : 'bell-plus-outline';
+        // let favIconName = favouriteLeagues[Number(id)] ? 'bell-minus' : 'bell-plus-outline';
         return (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 20, marginTop: 20, marginBottom: 8 }}>
-            <Text style={{ fontWeight: '500', fontSize: 13, color: '#666', flex: 1 }}>{title}</Text>
-            <TouchableOpacity
-              onPress={async () => {
-              let fav = {
-                id: Number(id),
-                type: 'league' as FavouriteType,
-              } as Favourite;
-              if (!favouriteLeagues[Number(id)]) {
-                addFavourite(fav).then(() => {
-                log.debug(`Added ${title} to favourites`);
-                setFavouriteLeagues(prev => ({ ...prev, [Number(id)]: true }));
-                });
-              } else {
-                removeFavourite(fav).then(() => {
-                log.debug(`Removed ${title} from favourites`);
-                setFavouriteLeagues(prev => ({ ...prev, [Number(id)]: false }));
-                });
-              }
-              }}
-              style={{
-              padding: 0,
-              marginRight: 15,
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: 30,
-              width: 30,
-              }}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <MaterialCommunityIcons name={favIconName} size={18} color={PRIMARY_COLOR} />
-            </TouchableOpacity>
-          </View>
-        );
+          <MatchCardHeader 
+            section={{ id, title, type: 'league' }}
+            favourites={favouriteLeagues}
+            OnSelect={(favourite: Favourite) => setFavouriteLeagues(prev => [...prev, favourite])}
+            OnDeselect={(favourite: Favourite) => setFavouriteLeagues(prev => prev.filter(fav => fav.id !== favourite.id))}
+          />
+        )
     }}
       renderItem={renderMatch}
       ListEmptyComponent={() => (

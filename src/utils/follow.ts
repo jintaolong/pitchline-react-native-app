@@ -11,7 +11,7 @@ export type Favourite = {
 
 export async function getFavourites(): Promise<Favourite[]> {
   const json = await AsyncStorage.getItem(FAV_KEY);
-  return json ? JSON.parse(json) : [];
+  return json ? JSON.parse(json) as Favourite[] : [];
 }
 
 export async function addFavourite(fav: Favourite) {

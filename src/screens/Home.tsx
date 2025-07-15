@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Match } from '../models/Matches';
 import MatchCard from '../components/MatchCard';
 import TopSearchBar, { SearchItem } from '../components/TopSearchBar';
-import { Favourite, getFavourites } from '../utils/follow';
+import { Favourite, getFavourites, removeFavourite } from '../utils/follow';
 import { useIsFocused } from '@react-navigation/native';
 import { getUpcomingMatches } from '../services/matchService';
 import { FixtureResponseDto } from '../dtos/Fixtures';
@@ -15,6 +15,7 @@ import log from '../utils/logger';
 import { Team } from '../models/Teams';
 import TeamCard from '../components/TeamCard';
 import { globalStyles } from '../styles/globalStyles';
+import MatchCardHeader from '../components/MatchCardHeader';
 
 const UPCOMING_GAME_DAY_SPAN = 3;
 
@@ -63,7 +64,39 @@ const HomeScreen = () => {
   const renderMatch = ({ item }: { item: Match }) => item.status !== 'NA' ? (
     <MatchCard item={item} />
   ) : (
-    <TeamCard team={item} onPress={(team) => navigation.navigate('TeamDetails', { teamId: team.id })} />
+    <TeamCard 
+      team={item} 
+      onPress={(team) => navigation.navigate('TeamDetails', { teamId: team.id })} 
+      onUnfollow={() => {
+          const fav = favourites.find(fav => fav.id === item.id && fav.type === 'team');
+          if (fav) {
+            removeFavourite(fav).then(() => {
+              setFavourites(prev => prev.filter(fav => (fav.id !== fav.id && fav.type === 'team') || fav.type !== 'team'));
+              // log.debug(`Unfollowed team: ${item.homeTeam.name || item.awayTeam.name}`);
+            });
+          }
+        }}  
+    />
+  );
+
+  const renderLeague = ({ item }: { item: Match }) => (
+    item.status !== 'NA' ? (
+      <MatchCard item={item} />
+    ) : (
+      <TeamCard 
+        team={item} 
+        onPress={(team) => navigation.navigate('LeagueDetails', { leagueId: team.id })} 
+        onUnfollow={() => {
+          const fav = favourites.find(fav => fav.id === item.id && fav.type === 'league');
+          if (fav) {
+            removeFavourite(fav).then(() => {
+              setFavourites(prev => prev.filter(fav => (fav.id !== fav.id && fav.type === 'league') || fav.type !== 'league'));
+              // log.debug(`Unfollowed league: ${item.homeTeam.name || item.awayTeam.name}`);
+            });
+          }
+        }}
+      />
+    )
   );
 
   // const renderTeam = ({ item }: { item: Team }) => (
@@ -257,8 +290,8 @@ const HomeScreen = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <TopSearchBar fetchSuggestions={fetchSuggestions} />
-
-      {/* <View>
+{/* 
+      <View>
         <Text>
           {favourites.map(fav => fav.type === 'team' ? `Team ${fav.id}` : `League ${fav.id}`).join(', ') || 'No favourites selected.'}
         </Text>
@@ -285,35 +318,51 @@ const HomeScreen = () => {
           contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }} // <-- Add paddingBottom here
           sections={[
             ...Object.entries(teamMatches).map(([teamId, { name, matches }]) => ({
+              id: Number(teamId),
               title: name || `Team ${teamId}`,
               data: matches,
               key: `team-${teamId}`,
             })),
             {
+              id : -1,
               title: "No Upcoming Matches",
               data: noMatchTeams.map((team) => {
-          return {
-            id: team.id,
-            homeTeam: team,
-            awayTeam: team,
-            homeLogo: team.logo,
-            awayLogo: team.logo,
-            status: 'NA',
-            competition: 'No Matches',
-            competitionId: 0,
-            channel: 'NA',
-            viewers: 'NA',
-          } as Match;
+                return {
+                  id: team.id,
+                  homeTeam: team,
+                  awayTeam: team,
+                  homeLogo: team.logo,
+                  awayLogo: team.logo,
+                  status: 'NA',
+                  competition: 'No Matches',
+                  competitionId: 0,
+                  channel: 'NA',
+                  viewers: 'NA',
+                } as Match;
               }),
               key: `no-match-team`,
             }
           ]}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderMatch}
-          renderSectionHeader={({ section: { title } }) => (
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionHeaderText}>{title}</Text>
-            </View>
+          // renderSectionHeader={({ section: { title } }) => (
+          //   <View style={styles.sectionHeaderRow}>
+          //     <Text style={styles.sectionHeaderText}>{title}</Text>
+          //   </View>
+          // )}
+          renderSectionHeader={({ section: { id, title, data } }) => (
+            <MatchCardHeader 
+              section={{ id, title, type: 'team' }}
+              favourites={favourites}
+              OnSelect={(favourite: Favourite) => 
+                setFavourites(prev => [...prev, favourite])
+              }
+              OnDeselect={(favourite: Favourite) => 
+                setFavourites(prev => prev
+                  .filter(fav => 
+                    (fav.id !== favourite.id && fav.type === 'team') || fav.type !== 'team'))
+              }
+            />
           )}
           ListEmptyComponent={
             <Text style={globalStyles.emptyListText}>
@@ -327,11 +376,13 @@ const HomeScreen = () => {
           contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }} // <-- Add paddingBottom here
           sections={[
             ...Object.entries(leagueMatches).map(([leagueId, { name, matches }]) => ({
+            id: Number(leagueId),
             title: name || `League ${leagueId}`,
             data: matches,
             key: `league-${leagueId}`,
           })),
           {
+            id: -1,
             title: "No Upcoming Matches",
             data: noMatchLeagues.map((league) => {
               return {
@@ -352,22 +403,21 @@ const HomeScreen = () => {
         ]
         }
           keyExtractor={(item) => item.id.toString()}
-          renderItem={renderMatch}
-          renderSectionHeader={({ section: { title, data } }) => 
-            // data.length === 0 ? (
-            //   <Text style={styles.noMatchTitle}>No upcoming matches for {title}</Text>
-            // ) : 
-            (
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeaderText}>{title}</Text>
-              </View>
-            )
-            // return(
-            //   <View style={styles.sectionHeaderRow}>
-            //     <Text style={styles.sectionHeaderText}>{title}</Text>
-            //   </View>
-            // )
-        }
+          renderItem={renderLeague}
+        renderSectionHeader={({ section: { id, title, data } }) => (
+          <MatchCardHeader 
+            section={{ id, title, type: 'league' }}
+            favourites={favourites}
+            OnSelect={(favourite: Favourite) => 
+              setFavourites(prev => [...prev, favourite])
+            }
+            OnDeselect={(favourite: Favourite) => 
+              setFavourites(prev => 
+                prev.filter(fav => 
+                  (fav.id !== favourite.id && fav.type === 'league') || fav.type !== 'league'))
+            }
+          />
+        )}
           ListEmptyComponent={
             <Text style={styles.emptyText}>
               No upcoming fixtures for your favourite leagues.
