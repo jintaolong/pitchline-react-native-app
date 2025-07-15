@@ -3,8 +3,8 @@ import { View, Text, FlatList, SectionList, TouchableOpacity, StyleSheet } from 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Match } from '../models/Matches';
 import MatchCard from '../components/MatchCard';
-import TopSearchBar, { SearchItem } from '../components/TopSearchBar';
-import { Favourite, getFavourites, removeFavourite } from '../utils/follow';
+import TopSearchBar from '../components/TopSearchBar';
+import { Favourite, FavouriteType, getFavourites, removeFavourite } from '../utils/follow';
 import { useIsFocused } from '@react-navigation/native';
 import { getUpcomingMatches } from '../services/matchService';
 import { FixtureResponseDto } from '../dtos/Fixtures';
@@ -13,9 +13,11 @@ import { getLeagueStanding, getTeamDetails } from '../services/teamService';
 import { useNavigation } from '@react-navigation/native';
 import log from '../utils/logger';
 import { Team } from '../models/Teams';
-import TeamCard from '../components/TeamCard';
+import TeamCard, { TeamCardTeam } from '../components/TeamCard';
 import { globalStyles } from '../styles/globalStyles';
 import MatchCardHeader from '../components/MatchCardHeader';
+import { SearchItemDto } from '../dtos/SearchTerms';
+import { fetchTopbarSearchOptions } from '../services/searchService';
 
 const UPCOMING_GAME_DAY_SPAN = 3;
 
@@ -31,30 +33,28 @@ type MatchOrLeagueOrTeam = {
   logo: string;
 };
 
-const searchData: SearchItem[] = require('../../assets/data/search_data.json');
+// const searchData: SearchItemDto[] = require('../../assets/data/search_data.json');
 
 const HomeScreen = () => {
   // log.debug(searchData.at(0));
   const navigation = useNavigation();
 
-  const updateMaps = (favs: Favourite[]) => {
-      // Build maps for team and league names
-      const teams: number[] = [];
-      const leagues: number[] = [];
-      favs.forEach(fav => {
-        if (fav.type === 'team') teams.push(fav.id);
-        if (fav.type === 'league') leagues.push(fav.id);
-      });
-      setTeamMap(teams);
-      setLeagueMap(leagues);
-  }
+  // const updateMaps = (favs: Favourite[]) => {
+  //     // Build maps for team and league names
+  //     const teams: number[] = [];
+  //     const leagues: number[] = [];
+  //     favs.forEach(fav => {
+  //       if (fav.type === 'team') teams.push(fav.id);
+  //       if (fav.type === 'league') leagues.push(fav.id);
+  //     });
+  //     // setTeamMap(teams);
+  // }
   
   const [favourites, setFavourites] = useState<Favourite[]>([]);
   // const [upcomingFavouriteMatches, setUpcomingFavouriteMatches] = useState<Match[]>([]);
   const [teamMatches, setTeamMatches] = useState<{ [teamId: number]: {name: string, matches: Match[]} }>({});
   const [leagueMatches, setLeagueMatches] = useState<{ [leagueId: number]: {name: string, matches: Match[]} }>({});
-  const [teamMap, setTeamMap] = useState<number[]>([]);
-  const [leagueMap, setLeagueMap] = useState<number[]>([]);
+  // const [teamMap, setTeamMap] = useState<number[]>([]);
   const [favTeamHasMatch, setFavTeamHasMatch] = useState<{ [teamId: number]: boolean }>({});
   const [favLeagueHasMatch, setFavLeagueHasMatch] = useState<{ [leagueId: number]: boolean }>({});
   const [noMatchTeams, setNoMatchTeams] = useState<MatchOrLeagueOrTeam[]>([]);
@@ -67,11 +67,11 @@ const HomeScreen = () => {
     <TeamCard 
       team={item} 
       onPress={(team) => navigation.navigate('TeamDetails', { teamId: team.id })} 
-      onUnfollow={() => {
-          const fav = favourites.find(fav => fav.id === item.id && fav.type === 'team');
+      onUnfollow={(team: TeamCardTeam ) => {
+          const fav = favourites.find(fav => fav.id === team.id && fav.type === 'team');
           if (fav) {
             removeFavourite(fav).then(() => {
-              setFavourites(prev => prev.filter(fav => (fav.id !== fav.id && fav.type === 'team') || fav.type !== 'team'));
+              setFavourites(prev => prev.filter(fav => (fav.id !== team.id && fav.type === 'team') || fav.type !== 'team'));
               // log.debug(`Unfollowed team: ${item.homeTeam.name || item.awayTeam.name}`);
             });
           }
@@ -86,11 +86,11 @@ const HomeScreen = () => {
       <TeamCard 
         team={item} 
         onPress={(team) => navigation.navigate('LeagueDetails', { leagueId: team.id })} 
-        onUnfollow={() => {
-          const fav = favourites.find(fav => fav.id === item.id && fav.type === 'league');
+        onUnfollow={(league: TeamCardTeam) => {
+          const fav = favourites.find(fav => fav.id === league.id && fav.type === 'league');
           if (fav) {
             removeFavourite(fav).then(() => {
-              setFavourites(prev => prev.filter(fav => (fav.id !== fav.id && fav.type === 'league') || fav.type !== 'league'));
+              setFavourites(prev => prev.filter(fav => (fav.id !== league.id && fav.type === 'league') || fav.type !== 'league'));
               // log.debug(`Unfollowed league: ${item.homeTeam.name || item.awayTeam.name}`);
             });
           }
@@ -106,11 +106,12 @@ const HomeScreen = () => {
   // Dummy fetchSuggestions implementation
   const fetchSuggestions = async (query: string) => {
     log.debug(`Fetching suggestions for query: ${query}`);
-    log.debug(`Total search data items: ${searchData.length}`);
-    const results = searchData.filter(item =>
-      item.name.toLowerCase().includes(query.toLowerCase())
-    );
-    log.debug(`Filtered results: ${results.length} items found`);
+    // log.debug(`Total search data items: ${searchData.length}`);
+    const results = await fetchTopbarSearchOptions(query);
+    // const results = searchData.filter(item =>
+    //   item.name.toLowerCase().includes(query.toLowerCase())
+    // );
+    // log.debug(`Filtered results: ${results.length} items found`);
     // Use a simple in-memory index for prefix search to improve performance
     // Build a Map from first letter to array of items for quick narrowing
     // const [searchIndex, setSearchIndex] = useState<Map<string, SearchItem[]>>(new Map());
@@ -140,10 +141,11 @@ const HomeScreen = () => {
     return results;
   };
 
+  // initial fetch of favourites
   useEffect(() => {
     getFavourites().then((favs) => {
       setFavourites(favs);
-      updateMaps(favs);
+      // updateMaps(favs);
     }).catch((error) => {
       console.error('Error fetching favourites:', error);
     });
@@ -156,7 +158,7 @@ const HomeScreen = () => {
         .then((favs) => {
           setFavourites(favs);
           // Build maps for team and league names
-          updateMaps(favs);
+          // updateMaps(favs);
         })
         .catch((error) => {
           console.error('Error fetching favourites:', error);
@@ -197,26 +199,30 @@ const HomeScreen = () => {
           .forEach((match: FixtureResponseDto) => {
             const homeId = match.fixture.teams.home.id;
             const awayId = match.fixture.teams.away.id;
-            teamMap.forEach(teamId => {
-              let teamName = homeId == teamId ? match.fixture.teams.home.name : match.fixture.teams.away.name;
+            favourites.forEach(fav => {
+              if (fav.type === 'team') {
+              const teamId = fav.id;
+              let teamName = homeId === teamId ? match.fixture.teams.home.name : match.fixture.teams.away.name;
               if (homeId === teamId || awayId === teamId) {
-                if (!teamMatches[teamId]) teamMatches[teamId] = {name: '', matches: []};
+                if (!teamMatches[teamId]) teamMatches[teamId] = { name: '', matches: [] };
                 teamMatches[teamId].matches.push(fixtureDtoToMatch(match));
                 teamMatches[teamId].name = teamName;
                 favTeamHasMatch[teamId] = true; // Mark that this team has a match
               }
+              }
             });
             setTeamMatches(teamMatches);
             setFavTeamHasMatch(favTeamHasMatch);
-            leagueMap.forEach(leagueId => {
+            favourites.forEach(fav => {
+              if (fav.type === 'league' && match.fixture.league.id === fav.id) {
               let leagueName = match.fixture.league.name;
-              if (match.fixture.league.id === leagueId) {
-                if (!leagueMatches[leagueId]) leagueMatches[leagueId] = {name: '', matches: []};
-                leagueMatches[leagueId].matches.push(fixtureDtoToMatch(match));
-                leagueMatches[leagueId].name = leagueName;
-                favLeagueHasMatch[leagueId] = true; // Mark that this league has a match
+              if (!leagueMatches[fav.id]) leagueMatches[fav.id] = { name: '', matches: [] };
+              leagueMatches[fav.id].matches.push(fixtureDtoToMatch(match));
+              leagueMatches[fav.id].name = leagueName;
+              favLeagueHasMatch[fav.id] = true; // Mark that this league has a match
               }
             });
+
             setLeagueMatches(leagueMatches);
             setFavLeagueHasMatch(favLeagueHasMatch);
           });
@@ -290,8 +296,8 @@ const HomeScreen = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <TopSearchBar fetchSuggestions={fetchSuggestions} />
-{/* 
-      <View>
+
+      {/* <View>
         <Text>
           {favourites.map(fav => fav.type === 'team' ? `Team ${fav.id}` : `League ${fav.id}`).join(', ') || 'No favourites selected.'}
         </Text>

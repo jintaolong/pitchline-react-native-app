@@ -23,6 +23,7 @@ import { addFavourite, Favourite, FavouriteType, getFavourites, removeFavourite 
 import { fixtureDtoToMatch } from '../utils/mappers';
 import { globalStyles } from '../styles/globalStyles';
 import MatchCardHeader from '../components/MatchCardHeader';
+import { useIsFocused } from '@react-navigation/native';
 
 const CALENDAR_SPAN = 60;
 
@@ -103,6 +104,23 @@ const FootballMatchesScreen = () => {
       // setFavouriteLeagues(favsMap);
     });
   }, []);
+
+  // const isFocused = useIsFocused();
+  // useEffect(() => {
+  //   if (isFocused) {
+  //     getFavourites()
+  //       .then((favs) => {
+  //         setFavouriteLeagues(
+  //           favs.filter(fav => {
+  //             return fav.type === 'league';
+  //           })
+  //         );
+  //       })
+  //       .catch((error) => {
+  //         console.error('Error fetching favourites:', error);
+  //       });
+  //   }
+  // }, [isFocused]);
 
   // const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 

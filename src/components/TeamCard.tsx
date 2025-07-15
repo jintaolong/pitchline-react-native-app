@@ -11,7 +11,7 @@ export interface TeamCardTeam{
 }
 
 const TeamCard = ({ team, onPress, onUnfollow }: { team: Match; onPress: (team: TeamCardTeam) => void; onUnfollow: (team: TeamCardTeam) => void }) => {
-    log.debug("TeamCard", team);
+    // log.debug("TeamCard", team);
     return (
         <TouchableOpacity
             onPress={() => onPress(team)}
