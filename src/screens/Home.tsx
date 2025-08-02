@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, SectionList, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, FlatList, SectionList, TouchableOpacity, StyleSheet, Button, InteractionManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Match } from '../models/Matches';
 import MatchCard from '../components/MatchCard';
@@ -18,9 +18,15 @@ import { globalStyles } from '../styles/globalStyles';
 import MatchCardHeader from '../components/MatchCardHeader';
 import { SearchItemDto } from '../dtos/SearchTerms';
 import { fetchTopbarSearchOptions } from '../services/searchService';
+import { CopilotStep, useCopilot, walkthroughable } from 'react-native-copilot';
+import { Ionicons } from '@expo/vector-icons';
 
 const UPCOMING_GAME_DAY_SPAN = 3;
 
+const WalkthroughableText = walkthroughable(Text);
+const WalkthroughableView = walkthroughable(View);
+const WalkthroughableTouchableOpacity = walkthroughable(TouchableOpacity);
+const WalkthroughableTopSearchBar = walkthroughable(TopSearchBar);
 
 // interface NoMatchTeamOrLeagues {
 //   id: number;
@@ -38,17 +44,6 @@ type MatchOrLeagueOrTeam = {
 const HomeScreen = () => {
   // log.debug(searchData.at(0));
   const navigation = useNavigation();
-
-  // const updateMaps = (favs: Favourite[]) => {
-  //     // Build maps for team and league names
-  //     const teams: number[] = [];
-  //     const leagues: number[] = [];
-  //     favs.forEach(fav => {
-  //       if (fav.type === 'team') teams.push(fav.id);
-  //       if (fav.type === 'league') leagues.push(fav.id);
-  //     });
-  //     // setTeamMap(teams);
-  // }
   
   const [favourites, setFavourites] = useState<Favourite[]>([]);
   // const [upcomingFavouriteMatches, setUpcomingFavouriteMatches] = useState<Match[]>([]);
@@ -60,6 +55,26 @@ const HomeScreen = () => {
   const [noMatchTeams, setNoMatchTeams] = useState<MatchOrLeagueOrTeam[]>([]);
   const [activeTab, setActiveTab] = useState<'teams' | 'leagues'>('teams');
   const [noMatchLeagues, setNoMatchLeagues] = useState<MatchOrLeagueOrTeam[]>([]);
+  const prevStepIndex = useRef<number | null>(null);
+
+  const {
+    start,
+    isFirstStep,
+    isLastStep,
+    goToNext,
+    goToNth,
+    goToPrev,
+    stop,
+    currentStep,
+  } = useCopilot();
+  
+  const handleTutorialOnPress = () => {
+    InteractionManager.runAfterInteractions(() => {
+      setTimeout(() => {
+        start();
+      }, 100);
+    });
+  }
 
   const renderMatch = ({ item }: { item: Match }) => item.status !== 'NA' ? (
     <MatchCard item={item} />
@@ -108,38 +123,30 @@ const HomeScreen = () => {
     log.debug(`Fetching suggestions for query: ${query}`);
     // log.debug(`Total search data items: ${searchData.length}`);
     const results = await fetchTopbarSearchOptions(query);
-    // const results = searchData.filter(item =>
-    //   item.name.toLowerCase().includes(query.toLowerCase())
-    // );
-    // log.debug(`Filtered results: ${results.length} items found`);
-    // Use a simple in-memory index for prefix search to improve performance
-    // Build a Map from first letter to array of items for quick narrowing
-    // const [searchIndex, setSearchIndex] = useState<Map<string, SearchItem[]>>(new Map());
-
-    // useEffect(() => {
-    //   // Build the index once on mount
-    //   const index = new Map<string, SearchItem[]>();
-    //   for (const item of searchData) {
-    //     const first = item.name[0]?.toLowerCase() || '';
-    //     if (!index.has(first)) index.set(first, []);
-    //     index.get(first)!.push(item);
-    //   }
-    //   setSearchIndex(index);
-    // }, []);
-
-    // let result: SearchItem[] = [];
-    // if (query.length > 0) {
-    //   const first = query[0].toLowerCase();
-    //   const candidates = searchIndex.get(first) || [];
-    //   result = candidates.filter(item =>
-    //     item.name.toLowerCase().startsWith(query.toLowerCase())
-    //   );
-    // } else {
-    //   result = [];
-    // }
-    // log.debug(`Fetched ${result.length} results for query: ${query}`);
     return results;
   };
+  // watch step change
+    useEffect(() => {
+    if (!currentStep) return;
+
+    if (prevStepIndex.current && prevStepIndex.current !== currentStep.order) {
+      // "Next" or "Back" was clicked
+      console.log('Moved to step:', currentStep.name);
+
+      if (prevStepIndex.current === 3 && currentStep.order === 4) {
+        // navigate to match screen for step 4 if jumped from step 3
+        navigation.navigate('Matches');
+      }
+      
+      // if (prevStepIndex.current === 4 && currentStep.order === 3) {
+      //   // navigate to home screen for step 3 if jumped from step 4
+      //   navigation.navigate('Home');
+      // }
+
+    }
+
+    prevStepIndex.current = currentStep.order;
+  }, [currentStep]);
 
   // initial fetch of favourites
   useEffect(() => {
@@ -150,6 +157,10 @@ const HomeScreen = () => {
       console.error('Error fetching favourites:', error);
     });
   }, []);
+
+  // useEffect(() => {
+  //   if (ready) start();
+  // }, [ready]);
 
   const isFocused = useIsFocused();
   useEffect(() => {
@@ -294,28 +305,73 @@ const HomeScreen = () => {
 
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <TopSearchBar fetchSuggestions={fetchSuggestions} />
-
-      {/* <View>
-        <Text>
-          {favourites.map(fav => fav.type === 'team' ? `Team ${fav.id}` : `League ${fav.id}`).join(', ') || 'No favourites selected.'}
-        </Text>
-      </View> */}
+    <SafeAreaView 
+      style={styles.container} 
+      edges={
+        // []
+        // ['top']
+        ['bottom', 'left', 'right'] // Only bottom, left, and right edges
+      } 
+    >
+        {/* <CopilotStep 
+          name={'top-test-text'} 
+          order={0} 
+          text={'Just try to see top test text for position comparison'}
+        >
+          <WalkthroughableText>Just try to see top test text for position comparison</WalkthroughableText>
+        </CopilotStep> */}
+      {/* <TopSearchBar fetchSuggestions={fetchSuggestions} /> */}
+      <CopilotStep
+        name={'top-search-bar'}
+        order={1}
+        text={'Search for teams, leagues, or players.'}
+      >
+        <WalkthroughableView
+          style={{ minHeight: 60 }}
+        >
+          <TopSearchBar fetchSuggestions={fetchSuggestions} />
+        </WalkthroughableView>
+      </CopilotStep>      
+      {/* <CopilotStep
+        name={'test'}
+        order={1}
+        text={'Test'}
+      >
+        <WalkthroughableText>Just try to see top test text for position comparison</WalkthroughableText>
+      </CopilotStep> */}
       {/* Tabs */}
       <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'teams' && styles.activeTab]}
-          onPress={() => setActiveTab('teams')}
+        <CopilotStep 
+          name={'team-tab'} 
+          order={2} 
+          text={'Display upcoming matches for your followed teams.'}
         >
-          <Text style={[styles.tabText, activeTab === 'teams' && styles.activeTabText]}>Teams</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'leagues' && styles.activeTab]}
-          onPress={() => setActiveTab('leagues')}
+          <WalkthroughableTouchableOpacity
+            style={[styles.tab, activeTab === 'teams' && styles.activeTab]}
+            onPress={() => setActiveTab('teams')}
+          >
+            {/* <Text style={[styles.tabText, activeTab === 'teams' && styles.activeTabText]}>Teams</Text> */}
+              <Text style={[styles.tabText, activeTab === 'teams' && styles.activeTabText]}>
+                Teams
+              </Text>              
+          </WalkthroughableTouchableOpacity>
+        </CopilotStep>
+        <CopilotStep 
+          name={'league-tab'} 
+          order={3}
+          text={'Display upcoming matches for your followed leagues.'}
         >
-          <Text style={[styles.tabText, activeTab === 'leagues' && styles.activeTabText]}>Leagues</Text>
-        </TouchableOpacity>
+          <WalkthroughableTouchableOpacity
+            style={[styles.tab, activeTab === 'leagues' && styles.activeTab]}
+            onPress={() => setActiveTab('leagues')}
+          >
+            {/* <Text style={[styles.tabText, activeTab === 'leagues' && styles.activeTabText]}>Leagues</Text> */}
+
+              <Text style={[styles.tabText, activeTab === 'leagues' && styles.activeTabText]}>
+                Leagues
+              </Text>
+          </WalkthroughableTouchableOpacity>
+        </CopilotStep>
       </View>
 
       {/* Tab Content */}
@@ -432,6 +488,19 @@ const HomeScreen = () => {
           stickySectionHeadersEnabled={false}
         />
       )}
+      <TouchableOpacity
+        style={styles.tutorialButton}
+        onPress={handleTutorialOnPress}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="help-circle-outline" size={32} color="#6366F1" />
+      </TouchableOpacity>
+       {/* Footnote */}
+      <View style={styles.footnoteContainer}>
+        <Text style={styles.footnoteText}>
+          All fixtures shown are upcoming within the next 3 days for your bookmarked teams and leagues.
+        </Text>
+      </View>
     </SafeAreaView>
   );
 }
@@ -493,6 +562,31 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 13,
     color: '#666',
+  },
+  footnoteContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    paddingTop: 8,
+    alignItems: 'center',
+  },
+  footnoteText: {
+    fontSize: 12,
+    color: '#888',
+    textAlign: 'center',
+  },
+  tutorialButton: {
+    position: 'absolute',
+    bottom: 32,
+    right: 24,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 8,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    zIndex: 100,
   },
 });
 

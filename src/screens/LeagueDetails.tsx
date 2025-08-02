@@ -18,7 +18,7 @@ const mockLeague = {
     },
 };
 
-const LeagueDetails: React.FC = () => {
+const LeagueDetailsScreen: React.FC = () => {
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <Image source={{ uri: mockLeague.logo }} style={styles.logo} />
@@ -117,4 +117,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default LeagueDetails;
+export default LeagueDetailsScreen;

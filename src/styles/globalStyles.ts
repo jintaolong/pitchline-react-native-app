@@ -1,4 +1,7 @@
-import { StyleSheet } from 'react-native';
+import { Dimensions, StyleSheet } from 'react-native';
+
+
+const { width } = Dimensions.get('window');
 
 export const colors = {
     primary: '#6366F1',
@@ -68,6 +71,28 @@ export const globalStyles = StyleSheet.create({
         alignItems: 'center',
         marginTop: 20,
         fontStyle: 'italic',
+    },
+    primaryButton: {
+        backgroundColor: '#6366F1',
+        paddingVertical: 18,
+        paddingHorizontal: 32,
+        borderRadius: 12,
+        width: width - 48,
+        alignItems: 'center',
+        marginBottom: 24,
+        shadowColor: '#6366F1',
+        shadowOffset: {
+        width: 0,
+        height: 4,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 8,
+    },
+    primaryButtonText: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: '600',
     },
 });
 

@@ -318,8 +318,8 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
           </View>
 
           {/* Stats */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Stats</Text>
+            <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { fontSize: 16, marginBottom: 8, color: '#6B7280', fontWeight: '500' }]}>Stats</Text>
             
             {Object.values(stats.home).every(val => val === -1) && Object.values(stats.away).every(val => val === -1) ? (
               <Text style={globalStyles.emptyListText}>No stats available for this match.</Text>
@@ -330,19 +330,19 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
               <View style={styles.statRow}>
               <Text style={styles.statLabel}>Possession</Text>
               <PitchlinePieChart
-                data={[
-                {
-                  key: fixture?.homeTeam.name || 'Home',
-                  value: stats?.home.ballPossession,
-                  svg: { fill: '#6366F1' },
-                },
-                {
-                  key: fixture?.awayTeam.name || 'Away',
-                  value: stats?.away.ballPossession,
-                  svg: { fill: '#3B82F6' },
-                },
-                ]}
-                radius={50}
+              data={[
+              {
+                key: fixture?.homeTeam.name || 'Home',
+                value: stats?.home.ballPossession,
+                svg: { fill: '#6366F1' },
+              },
+              {
+                key: fixture?.awayTeam.name || 'Away',
+                value: stats?.away.ballPossession,
+                svg: { fill: '#3B82F6' },
+              },
+              ]}
+              radius={50}
               />
               </View>
             )}
@@ -352,8 +352,8 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
               <View style={styles.statRow}>
               <Text style={styles.statLabel}>Shots on target</Text>
               <PitchlineComparisonBarChart
-                a={stats?.home.shotsOnGoal}
-                b={stats?.away.shotsOnGoal}
+              a={stats?.home.shotsOnGoal}
+              b={stats?.away.shotsOnGoal}
               />
               </View>
             )}
@@ -363,8 +363,8 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
               <View style={styles.statRow}>
               <Text style={styles.statLabel}>Shots off target</Text>
               <PitchlineComparisonBarChart
-                a={stats?.home.shotsOffGoal}
-                b={stats?.away.shotsOffGoal}
+              a={stats?.home.shotsOffGoal}
+              b={stats?.away.shotsOffGoal}
               />
               </View>
             )}
@@ -374,8 +374,8 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
               <View style={styles.statRow}>
               <Text style={styles.statLabel}>Total shots</Text>
               <PitchlineComparisonBarChart
-                a={stats?.home.totalShots}
-                b={stats?.away.totalShots}
+              a={stats?.home.totalShots}
+              b={stats?.away.totalShots}
               />
               </View>
             )}
@@ -385,8 +385,8 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
               <View style={styles.statRow}>
               <Text style={styles.statLabel}>Corners</Text>
               <PitchlineComparisonBarChart
-                a={stats?.home.cornerKicks}
-                b={stats?.away.cornerKicks}
+              a={stats?.home.cornerKicks}
+              b={stats?.away.cornerKicks}
               />
               </View>
             )}
@@ -396,8 +396,8 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
               <View style={styles.statRow}>
               <Text style={styles.statLabel}>Fouls</Text>
               <PitchlineComparisonBarChart
-                a={stats?.home.fouls}
-                b={stats?.away.fouls}
+              a={stats?.home.fouls}
+              b={stats?.away.fouls}
               />
               </View>
             )}
@@ -407,12 +407,12 @@ const PostMatchScreen = ({ route }: PostMatchScreenProps) => {
               <View style={styles.statRow}>
               <Text style={styles.statLabel}>Cards</Text>
               <PitchlineComparisonBarChart
-                a={(stats?.home.yellowCards) + (stats?.home.redCards)}
-                b={(stats?.away.yellowCards) + (stats?.away.redCards)}
+              a={(stats?.home.yellowCards) + (stats?.home.redCards)}
+              b={(stats?.away.yellowCards) + (stats?.away.redCards)}
               />
               </View>
             )}
-          </View>
+            </View>
 
           {/* Timeline Tabs */}
           {/* <View style={styles.tabContainer}>
@@ -612,7 +612,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   statLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#1F2937',
     marginBottom: 8,

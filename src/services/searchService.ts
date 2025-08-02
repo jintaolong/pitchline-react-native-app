@@ -6,7 +6,7 @@ const API_BASE_URL = 'https://your-api-base-url.com'; // Replace with your actua
 
 
 export async function fetchTopbarSearchOptions(keyword: string): Promise<SearchItemDto[]> {
-    log.debug(`Fetching search options for keyword: ${keyword}`);
+    // log.debug(`Fetching search options for keyword: ${keyword}`);
     try {
         const response = await axios.get(
             `https://plapi.mynetworkplace.com/search/${encodeURIComponent(keyword)}`,
@@ -17,9 +17,9 @@ export async function fetchTopbarSearchOptions(keyword: string): Promise<SearchI
             }
         )
         if (response.status === 200 && response.data) {
-            log.debug(`Search options fetched successfully for keyword: ${keyword}`);
+            // log.debug(`Search options fetched successfully for keyword: ${keyword}`);
             // Assuming the response data is in the format of PlayerDataDto
-            log.debug(`Search options: ${JSON.stringify(response.data)}`);
+            // log.debug(`Search options: ${JSON.stringify(response.data)}`);
             return response.data as SearchItemDto[];
         }
         else {

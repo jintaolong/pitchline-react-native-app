@@ -10,8 +10,8 @@ import PreMatchDetailsScreen from './screens/PreMatch';
 import PostMatchScreen from './screens/PostMatch';
 import InPlayDetailsScreen from './screens/InPlayDetails';
 import TeamDetailsScreen from './screens/TeamDetail';
-import PlayerDetailsScreen from './screens/PlayerDetails';
-import LeagueDetails from './screens/LeaguDetails';
+import PlayerDetailsScreen from './screens/PlayerDetails';import LeagueDetailsScreen from './screens/LeagueDetails';
+import { CopilotProvider } from 'react-native-copilot';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 // const BottomNavigator = createNativeStackNavigator<BottomNavigatorStackParamList>();
@@ -21,17 +21,28 @@ declare global {
     interface RootParamList extends RootStackParamList {}
   }
 }
-export default function App() {
+const App = () => {
   const isLoggedIn = false; // Replace with actual authentication logic
   return (
-    <NavigationContainer>
-      <StatusBar style="auto" />
-        <Stack.Navigator initialRouteName={isLoggedIn ? 'Main' : 'Launch'}>
-            <Stack.Group>
+    <CopilotProvider overlay='svg' verticalOffset={30}>
+      <NavigationContainer
+      >
+        <StatusBar style="auto" />
+        <Stack.Navigator 
+          initialRouteName={isLoggedIn ? 'Main' : 'Launch'}
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+            <Stack.Group
+              screenLayout={
+                isLoggedIn ? 'default' : 'modal'
+              }
+            >
               <Stack.Screen 
               name="Main"
               component={TabNavigator}
-              options={{ headerShown: false }}
+              options={{ title: 'PitchLine' }}
               />
               <Stack.Screen 
               name="Prematch"
@@ -49,10 +60,13 @@ export default function App() {
               options={{ headerShown: false }}
               />
             </Stack.Group>
-            <Stack.Group>
-              <Stack.Screen 
+            <Stack.Group
+              screenLayout={
+                isLoggedIn ? 'default' : 'modal'
+              }>
+              <Stack.Screen
                 name="LeagueDetails"
-                component={LeagueDetails}
+                component={LeagueDetailsScreen}
                 options={{ title: 'LeagueDetails' }}
               />
               <Stack.Screen 
@@ -66,22 +80,29 @@ export default function App() {
                 options={{ title: 'PlayerDetails' }}
               />
             </Stack.Group>
-            <Stack.Group>
+            <Stack.Group
+              screenLayout={
+                isLoggedIn ? 'default' : 'modal'
+              }
+            >
               <Stack.Screen
-                name="Launch"
-                component={LaunchScreen}
-                options={{ title: 'Welcome' }}
+              name="Launch"
+              component={LaunchScreen}
+              options={{ headerShown: false }}
               />
               <Stack.Screen
-                name="Register"
-                component={RegisterScreen}
-                options={{ title: 'Register' }}
+              name="Register"
+              component={RegisterScreen}
+              options={{ headerShown: false }}
               />
             </Stack.Group>
         </Stack.Navigator>
     </NavigationContainer>
+    </CopilotProvider>
   )
 }
+
+export default App;
 
 const styles = StyleSheet.create({
   container: {

@@ -24,8 +24,12 @@ import { fixtureDtoToMatch } from '../utils/mappers';
 import { globalStyles } from '../styles/globalStyles';
 import MatchCardHeader from '../components/MatchCardHeader';
 import { useIsFocused } from '@react-navigation/native';
+import { CopilotStep, walkthroughable } from 'react-native-copilot';
 
 const CALENDAR_SPAN = 60;
+
+const WalkthroughableView = walkthroughable(View);
+const WalkthroughableText = walkthroughable(Text);
 
 interface ScreenCalendarDate {
   selectedDate : Date;
@@ -320,28 +324,34 @@ const FootballMatchesScreen = () => {
 
 
         {/* Calendar */}
-        <View style={styles.calendar}>
-          <FlatList
-            data={weekDates}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.calendarContainer}
-            keyExtractor={(item: Date, index: number) => item.toISOString() + '-' + index}
-            renderItem={renderCalendarDate}
-            pagingEnabled={false}
-            // snapToAlignment="start"
-            decelerationRate="fast"
-            bounces={true}
-            scrollEnabled={true}
-            // extraData={selectedDate}
-            initialScrollIndex={selectedDate.calendarScrollIndex} // Center today
-            getItemLayout={(_, index) => ({
-              length: 60, // approximate width of each date button (adjust if needed)
-              offset: 60 * index,
-              index,
-            })}
-          />
-        </View>
+        <CopilotStep
+          name={'calendar'}
+          order={4}
+          text={'Select a date to view matches.'}
+        >
+          <WalkthroughableView style={styles.calendar}>
+            <FlatList
+              data={weekDates}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.calendarContainer}
+              keyExtractor={(item: Date, index: number) => item.toISOString() + '-' + index}
+              renderItem={renderCalendarDate}
+              pagingEnabled={false}
+              // snapToAlignment="start"
+              decelerationRate="fast"
+              bounces={true}
+              scrollEnabled={true}
+              // extraData={selectedDate}
+              initialScrollIndex={selectedDate.calendarScrollIndex} // Center today
+              getItemLayout={(_, index) => ({
+                length: 60, // approximate width of each date button (adjust if needed)
+                offset: 60 * index,
+                index,
+              })}
+            />
+          </WalkthroughableView>
+        </CopilotStep>
 
         {/* Filters */}
         <Animated.View style={[styles.filtersContainer, { height: 70, overflow: 'hidden' }]}>

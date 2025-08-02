@@ -42,28 +42,29 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({ fetchSuggestions }) => {
     const [showSuggestions, setShowSuggestions] = useState(false);
     // const [currentSuggestionContainerHeight, setCurrentSuggestionContainerHeight] = useState(0);
     const navigation = useNavigation();
+    const queryRef = useRef<string>('');
     const inputRef = useRef<TextInput>(null);
     // const suggestionsContainerRef = useRef<View>(null);
 
     const handleChange = async (text: string) => {
+        queryRef.current = text;
         setQuery(text);
-        if (text.length > 1) {
-            fetchSuggestions(text).then((filteredResults) => {
-                log.debug(`Fetched ${filteredResults.length} results for query: ${text}`)
-                // Filter results based on the query;
-                // const filteredResults = searchData.filter(item =>
-                //     item.name.toLowerCase().includes(text.toLowerCase())
-                // );
-                // log.debug(`Filtered results: ${filteredResults.length} items found`);        
-                // const searchData = mockTopSearchData;
-               log.debug(`Fetched ${filteredResults.length} results for query: ${text}`);
-                setSuggestions(filteredResults);
-                setShowSuggestions(true);
-            });
-        } else {
-            setSuggestions([]);
-            setShowSuggestions(false);
-        }
+        setTimeout(() => {
+            if (text === queryRef.current) {
+                if (text.length > 1) {
+                    fetchSuggestions(text).then((filteredResults) => {
+                        // log.debug(`Fetched ${filteredResults.length} results for query: ${text}`)
+                        setSuggestions(filteredResults);
+                        setShowSuggestions(true);
+                    });
+                } else {
+                    setSuggestions([]);
+                    setShowSuggestions(false);
+                }
+            }else{
+                // log.debug(`Within 1 sec query changed from "${queryRef.current}" to "${text}", ignoring this call`);
+            }
+        }, 1000); // Delay to simulate debounce
     };
 
     const handleSelect = (item: SearchItemDto) => {
@@ -72,6 +73,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({ fetchSuggestions }) => {
         setQuery('');
         setSuggestions([]);
         Keyboard.dismiss();
+        inputRef.current?.blur(); // <-- Add this line
         // Navigate based on type
         if (item.type === 'league') {
             navigation.navigate('LeagueDetails', { leagueId: item.id });
@@ -95,7 +97,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({ fetchSuggestions }) => {
         <View 
             style={[
             styles.container,
-            showSuggestions && suggestions.length > 0 && { flex: 1 }
+            // showSuggestions && suggestions.length > 0 && { flex: 1 }
             ]}
             onLayout={event => {
             const { height } = event.nativeEvent.layout;
@@ -120,7 +122,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({ fetchSuggestions }) => {
                 value={query}
                 onChangeText={handleChange}
                 onFocus={() => setShowSuggestions(suggestions.length > 0)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 100)}
+                onBlur={() => setShowSuggestions(false)}
                 returnKeyType="search"
             />
             {showSuggestions && suggestions.length > 0 && (
@@ -129,7 +131,7 @@ const TopSearchBar: React.FC<TopSearchBarProps> = ({ fetchSuggestions }) => {
             >
                 <SectionList
                 sections={sections}
-                keyExtractor={item => `${item.type}${item.id}`}
+                keyExtractor={(item, index) => `${item.type}${item.id}${index}`}
                 keyboardShouldPersistTaps="handled"
                 renderSectionHeader={({ section: { title } }) => (
                     <Text style={{ fontWeight: 'bold', fontSize: 14, marginVertical: 6, marginLeft: 8 }}>
@@ -183,10 +185,10 @@ input: {
     fontSize: 16,
 },
 suggestionsContainer: {
-    position: 'absolute',
-    top: 50,
-    left: 16,
-    right: 16,
+    position: 'relative',
+    // top: 50,
+    // left: 16,
+    // right: 16,
     backgroundColor: '#fff',
     borderRadius: 8,
     borderTopLeftRadius: 0,
@@ -197,9 +199,9 @@ suggestionsContainer: {
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     zIndex: 100,    // <-- ensure it's above other content
-    overflow: 'hidden', // <-- ensure children are clipped
+    // overflow: 'scroll', // <-- ensure children are clipped
     maxHeight: SCREEN_HEIGHT - 48,
-    height: SCREEN_HEIGHT - 48,
+    // height: SCREEN_HEIGHT - 180,
 },
 suggestionItem: {
     flexDirection: 'row',

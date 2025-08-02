@@ -1,4 +1,3 @@
-// import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
 import {
@@ -15,51 +14,88 @@ import { RootStackParamList } from '../navigation/RootStackParamList';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Launch'>;
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+
 
 const LaunchScreen = ({navigation}: Props) => {
+  const [bgOpacity, setBgOpacity] = React.useState(0.15);
+  const [logoTranslateY, setLogoTranslateY] = React.useState(height / 2 - 60);
+  const [logoOpacity, setLogoOpacity] = React.useState(1);
+
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
       <SafeAreaView style={styles.container}>
-        <View style={styles.content}>
-          {/* Chart Icon */}
-          <View style={styles.iconContainer}>
-            <View style={styles.chartContainer}>
-              <View style={[styles.bar, styles.bar1]} />
-              <View style={[styles.bar, styles.bar2]} />
-              <View style={[styles.bar, styles.bar3]} />
-            </View>
-          </View>
+        <View style={[styles.content, { justifyContent: 'center', alignItems: 'center', flex: 1 }]}>
+          <Image
+            source={require('../../assets/splash/pitch-large.png')}
+            style={{
+              position: 'absolute',
+              width: width * 2, // Swap width and height for rotation
+              height: height * 2, // Swap width and height for rotation
+              opacity: bgOpacity,
+              // top: (height - width) / 2,
+              // left: (width - height) / 2,
+              transform: [
+                { rotate: '49deg' },
+              ],
+            }}
+            resizeMode="contain"
+            blurRadius={3}
+          />
 
-          {/* Main Headline */}
-          <Text style={styles.title}>Unlock Your Sports Insight</Text>
-          
-          {/* Subtitle */}
-          <Text style={styles.subtitle}>
-            Access real-time data, strategic analysis, and match predictions.
-          </Text>
-
-          {/* Hero Image */}
-          <View style={styles.imageContainer}>
+          {/* Logo at the top */}
+          <View style={{ marginBottom: 48, alignItems: 'center', position: 'absolute', top: logoTranslateY, opacity: logoOpacity }}>
             <Image
-              source={{ uri: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-Rs0PTIplYtIR7PIaQMk3oYWadSe9xN.png' }}
-              style={styles.heroImage}
-              resizeMode="cover"
+              source={require('../../assets/splash/splash-logo-text.png')}
+              style={[styles.logoImage, { width: width * 0.7, height: 60, opacity: 0.9 }]}
+              resizeMode="contain"
             />
           </View>
 
-          {/* Get Started Button */}
-          <TouchableOpacity style={styles.primaryButton}>
-            <Text style={styles.primaryButtonText} onPress={() => {
-                navigation.navigate('Register')
-            }}>Get Started</Text>
-          </TouchableOpacity>
+          {/* Login Button in the center */}
+            <View style={{ justifyContent: 'center', alignItems: 'center', flex: 0, position: 'absolute', top: '60%' }}>
+            <TouchableOpacity
+              style={[styles.loginButton, { opacity: logoOpacity }]}
+              onPress={() => {
+              // Trigger smooth animation
+              // Animate bgOpacity, logoTranslateY, and logoOpacity over 400ms
+              const start = Date.now();
+              const duration = 400;
+              const initialBgOpacity = bgOpacity;
+              const initialLogoTranslateY = logoTranslateY;
+              const initialLogoOpacity = logoOpacity;
+              const targetBgOpacity = 1;
+              const targetLogoTranslateY = -height * 0.5;
+              const targetLogoOpacity = 0;
 
-          {/* Login Link */}
-          <TouchableOpacity style={styles.loginLink}>
-            <Text style={styles.loginLinkText}>I already have an account</Text>
-          </TouchableOpacity>
+              function animate() {
+                const now = Date.now();
+                const elapsed = Math.min(now - start, duration);
+                const t = elapsed / duration;
+
+                setBgOpacity(initialBgOpacity + (targetBgOpacity - initialBgOpacity) * t);
+                setLogoTranslateY(initialLogoTranslateY + (targetLogoTranslateY - initialLogoTranslateY) * t);
+                setLogoOpacity(initialLogoOpacity + (targetLogoOpacity - initialLogoOpacity) * t);
+
+                if (elapsed < duration) {
+                requestAnimationFrame(animate);
+                } else {
+                setBgOpacity(targetBgOpacity);
+                setLogoTranslateY(targetLogoTranslateY);
+                setLogoOpacity(targetLogoOpacity);
+                }
+              }
+              animate();
+              // Wait for animation to finish before navigating
+              setTimeout(() => navigation.navigate('Main'), 400);
+              }}
+            >
+              <Text style={styles.loginButtonText}>
+              Guest Login
+              </Text>
+            </TouchableOpacity>
+            </View>
         </View>
       </SafeAreaView>
     </>
@@ -70,94 +106,42 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA',
+    position: 'relative',
   },
   content: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 40,
-  },
-  iconContainer: {
-    marginBottom: 40,
-  },
-  chartContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 8,
-  },
-  bar: {
-    borderRadius: 8,
-    width: 24,
-  },
-  bar1: {
-    height: 60,
-    backgroundColor: '#8B7CF6',
-  },
-  bar2: {
-    height: 80,
-    backgroundColor: '#7C6AE8',
-  },
-  bar3: {
-    height: 100,
-    backgroundColor: '#6366F1',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    textAlign: 'center',
-    marginBottom: 16,
-    lineHeight: 38,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    marginBottom: 40,
-    lineHeight: 24,
-    paddingHorizontal: 20,
+    paddingVertical: 32,
+    display: 'flex',
+    flexDirection: 'column',
   },
   imageContainer: {
-    width: width - 48,
-    height: 200,
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginBottom: 40,
+    width: width,
+    alignItems: 'center',
+  },
+  buttonContainer: {
+    flex: 2,
+  },
+  logoImage: {
+    flex: 1,
+    opacity: 0.8,
   },
   heroImage: {
-    width: '100%',
-    height: '100%',
+    flex: 1,
+    opacity: 0.8,
   },
-  primaryButton: {
-    backgroundColor: '#6366F1',
-    paddingVertical: 18,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    width: width - 48,
-    alignItems: 'center',
-    marginBottom: 24,
-    shadowColor: '#6366F1',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+  loginButton: {
+    borderWidth: 2,
+    borderColor: '#6366F1',
+    backgroundColor: 'transparent',
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 60,
+    alignSelf: 'center',
   },
-  primaryButtonText: {
-    color: '#FFFFFF',
+  loginButtonText: {
+    color: '#6366F1',
     fontSize: 18,
     fontWeight: '600',
-  },
-  loginLink: {
-    paddingVertical: 12,
-  },
-  loginLinkText: {
-    color: '#6366F1',
-    fontSize: 16,
-    fontWeight: '500',
   },
 });
 
