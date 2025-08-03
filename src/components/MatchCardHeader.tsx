@@ -4,10 +4,16 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { Favourite, FavouriteType, addFavourite, removeFavourite } from '../utils/follow';
 import log from '../utils/logger';
 import { colors, globalStyles } from '../styles/globalStyles';
+import { CopilotStep, walkthroughable } from 'react-native-copilot';
+
+
+const WalkthroughableMaterialCommunityIcons = walkthroughable(MaterialCommunityIcons);
+const WalkthroughableView = walkthroughable(View);
 
 export interface MatchCardHeaderProps {
     section: {
         id: number;
+        index: number;
         title: string;
         type: 'league' | 'team';
     };
@@ -16,7 +22,7 @@ export interface MatchCardHeaderProps {
     OnDeselect: (favourites: Favourite) => void;
 }
 
-const MatchCardHeader = ({ section: { id, title, type }, OnSelect, OnDeselect, favourites }: MatchCardHeaderProps) => {
+const MatchCardHeader = ({ section: { id, index, title, type }, OnSelect, OnDeselect, favourites }: MatchCardHeaderProps) => {
     let favIconName = favourites.find(fav => fav.id === id && fav.type === type) ? 'bell-minus' : 'bell-plus-outline';
     return (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 20, marginTop: 20, marginBottom: 8 }}>
@@ -61,7 +67,21 @@ const MatchCardHeader = ({ section: { id, title, type }, OnSelect, OnDeselect, f
             }}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-            <MaterialCommunityIcons name={favIconName} size={18} color={colors.primary} />
+            {
+                index === 0 ? (
+                    <CopilotStep
+                        text={`Tap to ${favourites.find(fav => fav.id === id && fav.type === type) ? 'remove' : 'add'} ${title} to your favourites and keep track in Home under Leagues tab.`}
+                        order={6}
+                        name={`favourite-${id}`}
+                    >
+                        <WalkthroughableView>
+                            <MaterialCommunityIcons name={favIconName} size={18} color={colors.primary} />
+                        </WalkthroughableView>
+                    </CopilotStep>
+                ) :(
+                    <MaterialCommunityIcons name={favIconName} size={18} color={colors.primary} />
+                )
+            }
         </TouchableOpacity>
         )}
         </View>

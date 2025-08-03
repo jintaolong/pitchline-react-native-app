@@ -12,6 +12,8 @@ import InPlayDetailsScreen from './screens/InPlayDetails';
 import TeamDetailsScreen from './screens/TeamDetail';
 import PlayerDetailsScreen from './screens/PlayerDetails';import LeagueDetailsScreen from './screens/LeagueDetails';
 import { CopilotProvider } from 'react-native-copilot';
+import { globalStyles } from './styles/globalStyles';
+import TutorialTooltip from './components/TutorialTooltip';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 // const BottomNavigator = createNativeStackNavigator<BottomNavigatorStackParamList>();
@@ -24,79 +26,88 @@ declare global {
 const App = () => {
   const isLoggedIn = false; // Replace with actual authentication logic
   return (
-    <CopilotProvider overlay='svg' verticalOffset={30}>
-      <NavigationContainer
+    <CopilotProvider 
+      overlay='svg' 
+      verticalOffset={30} 
+      tooltipComponent={TutorialTooltip}
+      // tooltipStyle={globalStyles.tutorialTooltip}
+      stepNumberComponent={() => (
+        <Text style={{ color: '#6366F1', fontSize: 18, fontWeight: '600' }} />
+      )}
+      // stepNumberTextStyle={{ color: '#6366F1' }} // Change tutorial navigation text color here
+      // arrowColor="#6366F1"
+    >
+      <NavigationContainer>
+      <StatusBar style="auto" />
+      <Stack.Navigator 
+        initialRouteName={isLoggedIn ? 'Main' : 'Launch'}
+        screenOptions={{
+        headerShown: false,
+        }}
       >
-        <StatusBar style="auto" />
-        <Stack.Navigator 
-          initialRouteName={isLoggedIn ? 'Main' : 'Launch'}
-          screenOptions={{
-            headerShown: false,
-          }}
+        <Stack.Group
+          screenLayout={
+          isLoggedIn ? 'default' : 'modal'
+          }
         >
-            <Stack.Group
-              screenLayout={
-                isLoggedIn ? 'default' : 'modal'
-              }
-            >
-              <Stack.Screen 
-              name="Main"
-              component={TabNavigator}
-              options={{ title: 'PitchLine' }}
-              />
-              <Stack.Screen 
-              name="Prematch"
-              component={PreMatchDetailsScreen}
-              options={{ headerShown: false }}
-              />
-              <Stack.Screen 
-              name="Postmatch"
-              component={PostMatchScreen}
-              options={{ headerShown: false }}
-              />
-              <Stack.Screen 
-              name="Inplay"
-              component={InPlayDetailsScreen}
-              options={{ headerShown: false }}
-              />
-            </Stack.Group>
-            <Stack.Group
-              screenLayout={
-                isLoggedIn ? 'default' : 'modal'
-              }>
-              <Stack.Screen
-                name="LeagueDetails"
-                component={LeagueDetailsScreen}
-                options={{ title: 'LeagueDetails' }}
-              />
-              <Stack.Screen 
-                name="TeamDetails"
-                component={TeamDetailsScreen}
-                options={{ title: 'TeamDetails' }}
-              />
-              <Stack.Screen 
-                name="PlayerDetails"
-                component={PlayerDetailsScreen}
-                options={{ title: 'PlayerDetails' }}
-              />
-            </Stack.Group>
-            <Stack.Group
-              screenLayout={
-                isLoggedIn ? 'default' : 'modal'
-              }
-            >
-              <Stack.Screen
-              name="Launch"
-              component={LaunchScreen}
-              options={{ headerShown: false }}
-              />
-              <Stack.Screen
-              name="Register"
-              component={RegisterScreen}
-              options={{ headerShown: false }}
-              />
-            </Stack.Group>
-        </Stack.Navigator>
+          <Stack.Screen 
+          name="Main"
+          component={TabNavigator}
+          options={{ title: 'PitchLine' }}
+          />
+          <Stack.Screen 
+          name="Prematch"
+          component={PreMatchDetailsScreen}
+          options={{ headerShown: false }}
+          />
+          <Stack.Screen 
+          name="Postmatch"
+          component={PostMatchScreen}
+          options={{ headerShown: false }}
+          />
+          <Stack.Screen 
+          name="Inplay"
+          component={InPlayDetailsScreen}
+          options={{ headerShown: false }}
+          />
+        </Stack.Group>
+        <Stack.Group
+          screenLayout={
+          isLoggedIn ? 'default' : 'modal'
+          }>
+          <Stack.Screen
+          name="LeagueDetails"
+          component={LeagueDetailsScreen}
+          options={{ title: 'LeagueDetails' }}
+          />
+          <Stack.Screen 
+          name="TeamDetails"
+          component={TeamDetailsScreen}
+          options={{ title: 'TeamDetails' }}
+          />
+          <Stack.Screen 
+          name="PlayerDetails"
+          component={PlayerDetailsScreen}
+          options={{ title: 'PlayerDetails' }}
+          />
+        </Stack.Group>
+        <Stack.Group
+          screenLayout={
+          isLoggedIn ? 'default' : 'modal'
+          }
+        >
+          <Stack.Screen
+          name="Launch"
+          component={LaunchScreen}
+          options={{ headerShown: false }}
+          />
+          <Stack.Screen
+          name="Register"
+          component={RegisterScreen}
+          options={{ headerShown: false }}
+          />
+        </Stack.Group>
+      </Stack.Navigator>
     </NavigationContainer>
     </CopilotProvider>
   )

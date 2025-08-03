@@ -125,8 +125,9 @@ const HomeScreen = () => {
     const results = await fetchTopbarSearchOptions(query);
     return results;
   };
+  
   // watch step change
-    useEffect(() => {
+  useEffect(() => {
     if (!currentStep) return;
 
     if (prevStepIndex.current && prevStepIndex.current !== currentStep.order) {
@@ -138,10 +139,10 @@ const HomeScreen = () => {
         navigation.navigate('Matches');
       }
       
-      // if (prevStepIndex.current === 4 && currentStep.order === 3) {
-      //   // navigate to home screen for step 3 if jumped from step 4
-      //   navigation.navigate('Home');
-      // }
+      if (prevStepIndex.current === 4 && currentStep.order === 3) {
+        // navigate to home screen for step 3 if jumped from step 4
+        navigation.navigate('Home');
+      }
 
     }
 

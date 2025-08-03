@@ -94,5 +94,10 @@ export const globalStyles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '600',
     },
+    tutorialTooltip: {
+        // backgroundColor: "#6366F1",
+        borderRadius: 3,
+        paddingTop: 5,
+    }
 });
 

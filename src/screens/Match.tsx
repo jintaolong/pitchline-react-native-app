@@ -23,13 +23,15 @@ import { addFavourite, Favourite, FavouriteType, getFavourites, removeFavourite 
 import { fixtureDtoToMatch } from '../utils/mappers';
 import { globalStyles } from '../styles/globalStyles';
 import MatchCardHeader from '../components/MatchCardHeader';
-import { useIsFocused } from '@react-navigation/native';
-import { CopilotStep, walkthroughable } from 'react-native-copilot';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
+import { CopilotStep, useCopilot, walkthroughable } from 'react-native-copilot';
 
 const CALENDAR_SPAN = 60;
 
 const WalkthroughableView = walkthroughable(View);
 const WalkthroughableText = walkthroughable(Text);
+const WalkthroughableScrollView = walkthroughable(ScrollView);
+
 
 interface ScreenCalendarDate {
   selectedDate : Date;
@@ -87,12 +89,15 @@ const FootballMatchesScreen = () => {
     calendarScrollIndex: getCalendarScrollIndex(today, weekDates[0]),
     // calendarScrollIndex: 10 - 2
   });
+  const navigation = useNavigation();
   const [allGroupedFixtures, setAllGroupedFixtures] = useState<GroupedFixtures>({});
   const [selectedGroups, setSelectedGroups] = useState<number[]>([]);
   const [selectedFilters, setSelectedFilters] = useState<GroupFilter[]>([{ name: 'All', id: 0 }]);
   const [showCompetitionModal, setShowCompetitionModal] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [favouriteLeagues, setFavouriteLeagues] = useState<Favourite[]>([]);
+  
+  const prevStepIndex = useRef<number | null>(null);
 
   useEffect(() => {
     getFavourites().then((favs: Favourite[]) => {
@@ -186,6 +191,7 @@ const FootballMatchesScreen = () => {
     // );
   // }
   
+  const { currentStep } = useCopilot();
   useEffect(() => {
     // reset everything
     setSelectedGroups([]);
@@ -197,6 +203,23 @@ const FootballMatchesScreen = () => {
     allGroupedFixtures[groupId].name.toLowerCase().includes(searchText.toLowerCase())
   );
   
+  // watch step change
+  useEffect(() => {
+    if (!currentStep) return;
+
+    if (prevStepIndex.current && prevStepIndex.current !== currentStep.order) {
+      // "Next" or "Back" was clicked
+      console.log('Moved to step:', currentStep.name);
+
+      if (prevStepIndex.current === 6 && currentStep.order === 7) {
+        // navigate to match screen for step 4 if jumped from step 3
+        navigation.navigate('TeamDetails');
+      }
+
+    }
+
+    prevStepIndex.current = currentStep.order;
+  }, [currentStep]);
   // const handleMatchlistScroll = Animated.event(
   //   [{ nativeEvent: { contentOffset: { y: filterAnim } } }],
   //   { useNativeDriver: false }
@@ -355,62 +378,70 @@ const FootballMatchesScreen = () => {
 
         {/* Filters */}
         <Animated.View style={[styles.filtersContainer, { height: 70, overflow: 'hidden' }]}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={[styles.filterButtons, { flexDirection: 'row', flexWrap: 'wrap' }]}>
-              <TouchableOpacity
-                style={[
-            styles.filterButton,
-            selectedFilters.find(f => f.name === 'All') && styles.activeFilterButton
-                ]}
-                onPress={() => toggleFilter({ name: 'All', id: 0 })}
-              >
-                <Text style={[
-            styles.filterButtonText,
-            selectedFilters.find(f => f.name === 'All') && styles.activeFilterButtonText
-                ]}>
-            All
+          <CopilotStep
+            name={'filters'}
+            order={5}
+            text={'Select filters to narrow down matches.'}
+          >
+            <WalkthroughableScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={[styles.filterButtons, { flexDirection: 'row', flexWrap: 'wrap' }]}>
+                <TouchableOpacity
+                  style={[
+              styles.filterButton,
+              selectedFilters.find(f => f.name === 'All') && styles.activeFilterButton
+                  ]}
+                  onPress={() => toggleFilter({ name: 'All', id: 0 })}
+                >
+                  <Text style={[
+              styles.filterButtonText,
+              selectedFilters.find(f => f.name === 'All') && styles.activeFilterButtonText
+                  ]}>
+              All
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={styles.filterButton}
+                  onPress={() => setShowCompetitionModal(true)}
+                >
+                  <Text style={styles.filterButtonText}>Competition ▼</Text>
+                </TouchableOpacity>
+                
+              {/* Show selected filters as separate buttons */}
+                {selectedFilters
+                  .filter(f => f.name !== 'All') // Optionally hide "All" from the selected list
+                  .map(filter => (
+                <TouchableOpacity
+                key={filter.id}
+                style={[styles.filterButton, styles.activeFilterButton]}
+                onPress={() => toggleFilter(filter)}
+                >
+                <Text style={[styles.filterButtonText, styles.activeFilterButtonText]}>
+                  {filter.name} ✕
                 </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.filterButton}
-                onPress={() => setShowCompetitionModal(true)}
-              >
-                <Text style={styles.filterButtonText}>Competition ▼</Text>
-              </TouchableOpacity>
-              
-            {/* Show selected filters as separate buttons */}
-              {selectedFilters
-                .filter(f => f.name !== 'All') // Optionally hide "All" from the selected list
-                .map(filter => (
-              <TouchableOpacity
-              key={filter.id}
-              style={[styles.filterButton, styles.activeFilterButton]}
-              onPress={() => toggleFilter(filter)}
-              >
-              <Text style={[styles.filterButtonText, styles.activeFilterButtonText]}>
-                {filter.name} ✕
-              </Text>
-              </TouchableOpacity>
-                ))}
-            </View>
+                </TouchableOpacity>
+                  ))}
+              </View>
 
-          </ScrollView>
+            </WalkthroughableScrollView>
+          </CopilotStep>
+
         </Animated.View>
 
         {/* Matches List */}
     <SectionList
-      sections={filteredGroups.map(groupId => ({
+      sections={filteredGroups.map((groupId, index) => ({
         id: groupId,
+        index: index,
         title: allGroupedFixtures[groupId].name,
         data: allGroupedFixtures[groupId].matches || [],
       }))}
       keyExtractor={(item) => `${item.competitionId}-${item.id}`}
-      renderSectionHeader={({ section: { id, title } }) => {
+      renderSectionHeader={({ section: { id, index, title } }) => {
         // let favIconName = favouriteLeagues[Number(id)] ? 'bell-minus' : 'bell-plus-outline';
         return (
           <MatchCardHeader 
-            section={{ id, title, type: 'league' }}
+            section={{ id, index, title, type: 'league' }}
             favourites={favouriteLeagues}
             OnSelect={(favourite: Favourite) => setFavouriteLeagues(prev => [...prev, favourite])}
             OnDeselect={(favourite: Favourite) => setFavouriteLeagues(prev => prev.filter(fav => fav.id !== favourite.id))}
