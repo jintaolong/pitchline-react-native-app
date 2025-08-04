@@ -380,14 +380,16 @@ const HomeScreen = () => {
         <SectionList
           contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }} // <-- Add paddingBottom here
           sections={[
-            ...Object.entries(teamMatches).map(([teamId, { name, matches }]) => ({
+            ...Object.entries(teamMatches).map(([teamId, { name, matches }], index) => ({
               id: Number(teamId),
+              index: index,
               title: name || `Team ${teamId}`,
               data: matches,
               key: `team-${teamId}`,
             })),
             {
-              id : -1,
+              id: -1,
+              index: 0,
               title: "No Upcoming Matches",
               data: noMatchTeams.map((team) => {
                 return {
@@ -413,9 +415,9 @@ const HomeScreen = () => {
           //     <Text style={styles.sectionHeaderText}>{title}</Text>
           //   </View>
           // )}
-          renderSectionHeader={({ section: { id, title, data } }) => (
+          renderSectionHeader={({ section: { id, index, title, data } }) => (
             <MatchCardHeader 
-              section={{ id, title, type: 'team' }}
+              section={{ id, index, title, type: 'team' }}
               favourites={favourites}
               OnSelect={(favourite: Favourite) => 
                 setFavourites(prev => [...prev, favourite])
@@ -438,14 +440,16 @@ const HomeScreen = () => {
         <SectionList
           contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }} // <-- Add paddingBottom here
           sections={[
-            ...Object.entries(leagueMatches).map(([leagueId, { name, matches }]) => ({
+            ...Object.entries(leagueMatches).map(([leagueId, { name, matches }], index) => ({
             id: Number(leagueId),
+            index: index,
             title: name || `League ${leagueId}`,
             data: matches,
             key: `league-${leagueId}`,
           })),
           {
             id: -1,
+            index: 0,
             title: "No Upcoming Matches",
             data: noMatchLeagues.map((league) => {
               return {
@@ -467,9 +471,9 @@ const HomeScreen = () => {
         }
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderLeague}
-        renderSectionHeader={({ section: { id, title, data } }) => (
+        renderSectionHeader={({ section: { id, index, title, data } }) => (
           <MatchCardHeader 
-            section={{ id, title, type: 'league' }}
+            section={{ id, index, title, type: 'league' }}
             favourites={favourites}
             OnSelect={(favourite: Favourite) => 
               setFavourites(prev => [...prev, favourite])
